@@ -1,0 +1,86 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+library(CodeClanData)
+```
+
+```{r}
+drinks_content
+```
+
+```{r}
+dim(drinks_content)
+```
+
+```{r}
+glimpse(drinks_content)
+```
+
+```{r}
+drinks_content %>%
+  drop_na(Calories) %>% 
+  select(Beverage_category, Beverage, Beverage_prep, Calories)
+```
+
+```{r}
+drinks_content %>%
+  drop_na(Calories) %>% 
+  select(Beverage_category, Beverage, Beverage_prep, Calories) %>% 
+  mutate(calorie_diff = Calories - 135)
+```
+
+```{r}
+drinks_content %>%
+  drop_na(Calories) %>% 
+  select(Beverage_category, Beverage, Beverage_prep, Calories) %>% 
+  mutate(calorie_diff = Calories - 135) %>% 
+  group_by(Beverage_category) %>% 
+  summarise(avg_cals = mean(Calories)) %>% 
+  arrange(avg_cals)
+```
+
+```{r}
+drinks_content %>%
+  drop_na(Calories) %>% 
+  select(Beverage_category, Beverage, Beverage_prep, Calories) %>% 
+  mutate(calorie_diff = Calories - 135) %>% 
+  group_by(Beverage_prep) %>% 
+  summarise(avg_cals = mean(Calories)) %>% 
+  arrange(avg_cals)
+```
+
+```{r}
+drinks_content %>% 
+  drop_na(Calories) %>% 
+  summarise(mean(Calories))
+```
+
+```{r}
+drinks_content %>% 
+  drop_na(Calories) %>%
+  group_by(Beverage_prep) %>% 
+  filter(Calories > 193.8719) %>% 
+  summarise(count = n())
+```
+
+```{r}
+drinks_content %>%
+  drop_na(Calories) %>% 
+  select(Beverage_category, Beverage, Beverage_prep, Calories) %>% 
+  mutate(calorie_diff = Calories - 135) %>% 
+  group_by(Beverage_category) %>% 
+  mutate(avg_cals_cat = mean(Calories)) %>% 
+  group_by(Beverage_prep) %>% 
+  mutate(avg_cals_prep = mean(Calories)) %>%
+  group_by(Beverage) %>% 
+  mutate(avg_cals_bev = mean(Calories)) %>% 
+  arrange(avg_cals_bev, avg_cals_cat, avg_cals_prep)
+```
+
