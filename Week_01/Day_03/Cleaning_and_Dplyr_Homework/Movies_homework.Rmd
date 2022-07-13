@@ -1,0 +1,79 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+library(janitor)
+library(CodeClanData)
+```
+
+Question 1
+```{r}
+movies <- read_csv("data/movies.csv")
+movies
+```
+
+Question 2
+```{r}
+movies_selelcted <- movies %>% 
+  select(title, budget, runtime)
+
+movies_selelcted
+```
+
+Question 3
+```{r}
+movies_selelcted %>% 
+  summarise(count = sum(is.na(title)))
+
+movies_selelcted %>% 
+  summarise(count = sum(is.na(budget)))
+
+movies_selelcted %>% 
+  summarise(count = sum(is.na(runtime)))            
+```
+
+```{r}
+movies_selelcted %>% 
+  filter(is.na(runtime))
+```
+
+Question 4
+```{r}
+movies_runtime <- movies_selelcted %>% 
+  mutate(runtime = na_if(runtime, "0")) %>% 
+  summarise(count = sum(is.na(runtime))) 
+movies_runtime
+```
+
+Question 5
+```{r}
+movies_imputed <- movies_selelcted %>% 
+  mutate(runtime = na_if(runtime, "0"),
+         runtime = coalesce(runtime, median(runtime, na.rm = TRUE)))
+movies_imputed
+
+movies_imputed_count <- movies_selelcted %>% 
+  mutate(runtime = na_if(runtime, "0"),
+         runtime = coalesce(runtime, median(runtime, na.rm = TRUE))) %>% 
+  summarise(count = sum(is.na(runtime)))
+movies_imputed_count
+```
+
+Question 6
+```{r}
+movies_imputed %>% 
+  slice_max(runtime, n = 10)
+
+movies_imputed %>% 
+    slice_min(runtime, n = 10)
+```
+
+Question 7
+```{r}
+movies_imputed %>% 
+  mutate(budget = if_else(budget < 100,
+                          median(budget), budget))
+```

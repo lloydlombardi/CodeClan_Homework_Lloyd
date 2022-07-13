@@ -10,6 +10,7 @@ library(tidyverse)
 ```{r}
 library(CodeClanData)
 ```
+QUESTION 1
 
 ```{r}
 drinks_content
@@ -23,12 +24,14 @@ dim(drinks_content)
 glimpse(drinks_content)
 ```
 
+QUESTION 2
 ```{r}
 drinks_content %>%
   drop_na(Calories) %>% 
   select(Beverage_category, Beverage, Beverage_prep, Calories)
 ```
 
+QUESTION 3
 ```{r}
 drinks_content %>%
   drop_na(Calories) %>% 
@@ -36,6 +39,7 @@ drinks_content %>%
   mutate(calorie_diff = Calories - 135)
 ```
 
+QUESTION 4
 ```{r}
 drinks_content %>%
   drop_na(Calories) %>% 
@@ -46,6 +50,7 @@ drinks_content %>%
   arrange(avg_cals)
 ```
 
+QUESTION 5
 ```{r}
 drinks_content %>%
   drop_na(Calories) %>% 
@@ -53,9 +58,9 @@ drinks_content %>%
   mutate(calorie_diff = Calories - 135) %>% 
   group_by(Beverage_prep) %>% 
   summarise(avg_cals = mean(Calories)) %>% 
-  arrange(avg_cals)
+  arrange(desc(avg_cals))
 ```
-
+QUESTION 6
 ```{r}
 drinks_content %>% 
   drop_na(Calories) %>% 
@@ -70,6 +75,7 @@ drinks_content %>%
   summarise(count = n())
 ```
 
+QUESTION 7
 ```{r}
 drinks_content %>%
   drop_na(Calories) %>% 
@@ -82,5 +88,23 @@ drinks_content %>%
   group_by(Beverage) %>% 
   mutate(avg_cals_bev = mean(Calories)) %>% 
   arrange(avg_cals_bev, avg_cals_cat, avg_cals_prep)
+```
+
+Question 7 Solution
+```{r}
+drinks_content %>%
+  group_by(Beverage_category, Beverage, Beverage_prep) %>%
+  summarise(min_calories = min(Calories)) %>%
+  arrange(min_calories) %>% 
+  head(5)
+```
+Question 7 Solution Continued
+```{r}
+drinks_content %>%
+  filter(Beverage_category != "Tazo® Tea Drinks") %>% 
+  group_by(Beverage_category, Beverage, Beverage_prep) %>%
+  summarise(min_calories = min(Calories)) %>%
+  arrange(min_calories) %>% 
+  head(5)
 ```
 
