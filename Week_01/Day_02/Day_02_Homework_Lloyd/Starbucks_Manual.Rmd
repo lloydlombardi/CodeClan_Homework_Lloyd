@@ -1,0 +1,51 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+```{r}
+library(tidyverse)
+```
+
+```{r}
+library(CodeClanData)
+```
+```{r}
+glimpse(drinks_content)
+```
+
+Quesiton 2
+```{r}
+new_table_1 <- select(drinks_content, Beverage_category, Beverage, Beverage_prep, Calories)
+new_table_1
+```
+
+Question 3
+
+```{r}
+new_table_2 <- mutate(new_table_1, calorie_diff = Calories - 135)
+new_table_2
+```
+
+Question 4
+
+```{r}
+new_table_3 <- group_by(new_table_2, Beverage_category)
+summarise(new_table_3, avg_cals_cat = mean(Calories))
+```
+
+Question 5
+
+```{r}
+new_table_4 <- group_by(new_table_2, Beverage_prep)
+summarise(new_table_4, avg_cals_prep = mean(Calories))
+```
+
+Question 6
+
+```{r}
+avg_cals_drink <- summarise(drinks_content, mean(Calories))
+group_prep <- group_by(drinks_content, Beverage_prep)
+more_than_avg <- filter(group_prep, Calories > 193.8719)
+summarise(more_than_avg, count = n())
+```
+
