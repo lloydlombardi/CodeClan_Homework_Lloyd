@@ -77,3 +77,17 @@ movies_imputed %>%
   mutate(budget = if_else(budget < 100,
                           median(budget), budget))
 ```
+
+Extension
+
+```{r}
+movie_budgets <- movies_selelcted %>% 
+  mutate(budget_type = case_when(
+    budget < 12000000 ~ "Small Budget",
+     budget > 40000000 ~ "Big Budget",
+    budget >= 12000000 ~ "Medium Budget"
+  ))
+
+movie_budgets
+```
+
