@@ -80,7 +80,7 @@ movies_imputed
 
 ```{r}
 #Extension Q1 ----
-movie_budgets <- movies_selelcted %>% 
+movie_budgets <- movies_selected %>% 
   mutate(budget_type = case_when(
     budget < 12e6 ~ "Small Budget",
     budget < 40e6 ~ "Medium Budget",
@@ -96,6 +96,6 @@ movies %>%
   summarise(across(where(is.character), ~sum(is.na(.x))))
 
 movies %>% 
-  summarise(across(where(is.numeric),~sum(is.na(.x))))
+  summarise(across(where(is.numeric), ~sum(is.na(.x))))
 ```
 

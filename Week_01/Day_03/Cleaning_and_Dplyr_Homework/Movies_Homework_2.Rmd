@@ -9,19 +9,21 @@ library(janitor)
 library(CodeClanData)
 ```
 
-Q1
+
 ```{r}
+#Question 1 ----
 movies <- read_csv("data/movies.csv")
 movies %>% 
   clean_names()
 ```
 
-Q2
+
 ```{r}
-movies_sel_2 <- movies %>% 
+#Question 2 ----
+movies_select <- movies %>% 
   select(title, budget, runtime)
 
-movies_sel_2
+movies_select
 ```
 Q3
 ```{r}
@@ -33,35 +35,57 @@ movies_sel_2 %>%
 
 movies_sel_2 %>% 
   summarise(count = sum(is.na(budget)))
+
+#A faster way to complete the above ----
+#Set new objects for each NA count
+
+#movies_sel_2 %>% 
+#  summarise(na_rutime = sum(is.na(runtime)),
+#            na_title = sum(is.na(title)),
+#            na_budget = sum(is.na(budget)))
+
+#Using the across function to complete ----
+#'.fns' tells what function to apply across all columns
+#'~' tells function to iterate first but not execute, then execute all together
+#'.x' is a placeholder for all column names
+
+#movies_sel_2 %>% 
+#  summarise(across(.fns = ~sum(is.na(.x))))
+
+#Using the across function to apply to only 2 of the columns ----
+#'.cols' is used to specify certain columns, use a vector
+
+#movies_sel_2 %>% 
+#  summarise(across(
+#    .cols = c(title, budget),
+#    .fns = ~sum(is.na(.x))
+# ))
 ```
 
 Q4
 ```{r}
 movies_runtime_2 <- movies_sel_2 %>% 
-  mutate(runtime = na_if(runtime, "0")) %>% 
-  summarise(count = sum(is.na(runtime)))
-movies_runtime_2
+  mutate(runtime = na_if(runtime, "0"))
+
+movies_runtime_2 %>% 
+    summarise(count = sum(is.na(runtime)))
 ```
 
 Q5
 ```{r}
-movies_imputed_2 <- movies_sel_2 %>% 
-  mutate(runtime = na_if(runtime, "0")) %>% 
-  mutate(runtime = coalesce(runtime, median(runtime), na.rm = TRUE)) %>% 
-  summarise(count = sum(is.na(runtime)))
-movies_imputed_2
-```
-Q6
-```{r}
-movies_imputed_2 <- movies_sel_2 %>% 
-  mutate(runtime = na_if(runtime, "0")) %>% 
+movies_imputed_2 <- movies_runtime_2 %>% 
   mutate(runtime = coalesce(runtime, median(runtime), na.rm = TRUE))
 
 movies_imputed_2 %>% 
-  slice_min(runtime, n = 10)
-
+    summarise(count = sum(is.na(runtime)))
+```
+Q6
+```{r}
 movies_imputed_2 %>% 
   slice_max(runtime, n = 10)
+
+movies_imputed_2 %>% 
+  slice_min(runtime, n = 10)
 ```
 
 Q7
@@ -86,6 +110,10 @@ movies_budget_2
 
 Ex Q 2 
 ```{r}
+movies %>% 
+  summarise(across(where(is.character), ~sum(is.na(.x))))
 
+movies %>% 
+  summarise(across(where(is.numeric),~sum(is.na(.x))))
 ```
 

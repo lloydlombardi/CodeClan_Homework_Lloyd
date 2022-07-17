@@ -1,0 +1,172 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+#Read in tidyverse and janitor packages ----
+library(tidyverse)
+library(janitor)
+```
+
+```{r}
+#Read in 'books' dataframe ----
+books <- read_csv("data/books.csv")
+```
+
+```{r}
+#Clean names ----
+books <- clean_names(books)
+books
+
+#Change some column names to keep best practice ---- 
+books <- books %>% 
+  rename(row_id = rowid,
+         isbn_13 = isbn13)
+
+books
+```
+
+```{r}
+#Read in data set ----
+books
+```
+
+```{r}
+#Check dimensions of data set ----
+dim(books)
+```
+
+```{r}
+#Check variable names ----
+names(books)
+```
+
+```{r}
+#View data set in other tab ----
+view(books)
+```
+
+
+```{r}
+#Have a look at the overall summary ----
+summary(books)
+```
+
+
+```{r}
+#Group by publisher and find 10 most common publishers ----
+publisher_count <- books %>% 
+  group_by(publisher) %>% 
+  summarise(publisher_number = n())
+
+publisher_count %>% 
+  arrange(desc(publisher_number)) %>% 
+  slice_max(publisher_number, n = 10)
+
+```
+
+
+```{r}
+#Authors that have written at least 10 books ----
+top_authors <- books %>% 
+  group_by(authors)%>%
+  summarise(author_count = n())%>% 
+  arrange(desc(author_count)) %>% 
+  filter(author_count >= 10)
+
+top_authors
+```
+
+
+```{r}
+#Find how many NA values each category has by numeric and character ----
+
+books %>% 
+  summarise(across(where(is.numeric), ~sum(is.na(.x))))
+
+books %>% 
+  summarise(across(where(is.numeric), ~sum(is.na(.x))))
+```
+
+```{r}
+#Find how many "0" values there are in numeric columns ----
+
+zero_values <- books %>% 
+  summarise(across(
+    .cols = where(is.numeric),
+    .fns = ~sum((.x) == 0)
+  ))
+
+zero_values
+```
+
+```{r}
+#Replace num_pages = 0 with "unknown" ----
+pages_unknown <- books %>%
+  mutate(num_pages = as.character(num_pages),
+         num_pages = na_if(num_pages, 0),
+         num_pages = coalesce(num_pages, "unknown"))
+
+#Show that the code is working
+pages_unknown %>% 
+  filter(num_pages == "unknown")
+```
+
+```{r}
+#Drop rows where ratings_count = 0 ----
+zero_ratings <- books %>%
+  mutate(ratings_count = na_if(ratings_count, 0))
+  
+zero_ratings <- zero_average_ratings %>% 
+  drop_na(ratings_count)
+
+zero_ratings
+```
+
+
+```{r}
+#Add new column "rating_grade" which categorises the average ratings, place after average_rating column ----
+
+books %>% 
+  mutate(rating_grade = case_when(
+    average_rating < 1 ~ "Very Bad",
+    average_rating < 2 ~ "Bad",
+    average_rating < 3 ~ "Average",
+    average_rating < 4 ~ "Good",
+    average_rating < 5 ~ "Very Good"),
+    .after = average_rating)
+```
+
+```{r}
+#Proportion of ratings:text reviews for books that have been given more than 100 rating scores ----
+
+books %>% 
+  mutate(text_reviews_proportion = text_reviews_count/(ratings_count + text_reviews_count)*100,
+         .after = text_reviews_count) %>%
+  filter(ratings_count > 100) %>% 
+  arrange(desc(text_reviews_proportion))
+```
+
+```{r}
+#Find the authors with more than 20 books and rank them by average_rating
+books %>% 
+  group_by(authors) %>% 
+  summarise(author_count = n(),
+         author_average_rating = mean(average_rating)) %>%
+  filter(author_count > 20) %>% 
+  arrange(desc(author_average_rating))
+```
+
+```{r}
+books %>% 
+  mutate(our_recommendation = case_when(
+    average_rating < 1    & num_pages < 50  ~ "Don't read",
+    average_rating < 3    & num_pages > 300 ~ "Don't waste yout time!",
+    average_rating >= 3.5 & num_pages < 200 ~ "Short but good!",
+    average_rating < 4    & num_pages < 599 ~ "You might enjoy this",
+    average_rating > 4    & num_pages < 600 ~ "Short but very sweet",
+    average_rating > 4    & num_pages > 600 ~ "Highly recommended"),
+    .after = average_rating)
+```
+
