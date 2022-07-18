@@ -149,12 +149,22 @@ books %>%
 ```
 
 ```{r}
-#Find the authors with more than 20 books and rank them by average_rating
+#Find the authors with more than 20 books and rank them by their average rating
+# books %>% 
+  # group_by(authors) %>% 
+  # summarise(author_count = n(),
+  #        author_average_rating = mean(average_rating)) %>%
+  # filter(author_count > 20) %>% 
+  # arrange(desc(author_average_rating))
+
+#Run the above code but split any co-authors ---- 
 books %>% 
-  group_by(authors) %>% 
+  mutate(authors = str_split(authors, "/")) %>% 
+  unnest(authors) %>% 
+  group_by(authors) %>%
   summarise(author_count = n(),
          author_average_rating = mean(average_rating)) %>%
-  filter(author_count > 20) %>% 
+  filter(author_count > 20) %>%
   arrange(desc(author_average_rating))
 ```
 
@@ -167,7 +177,15 @@ books %>%
     average_rating >= 3.5 & num_pages < 200 ~ "Short but good!",
     average_rating < 4    & num_pages < 599 ~ "You might enjoy this",
     average_rating > 4    & num_pages < 600 ~ "Short but very sweet",
-    average_rating > 4    & num_pages > 600 ~ "Highly recommended"),
+    average_rating > 4    & num_pages > 600 ~ "Highly recommended",
+    TRUE                                    ~ "Decide yourself"),
     .after = average_rating)
+```
+
+```{r}
+books %>% 
+  group_by(authors) %>% 
+  mutate(author_average_rating = mean(average_rating),
+         .after = average_rating)
 ```
 
