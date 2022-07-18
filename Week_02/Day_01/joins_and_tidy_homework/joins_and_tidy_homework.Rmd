@@ -1,0 +1,78 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+library(janitor)
+```
+
+```{r}
+#Quesiton 1 ----
+card <- read_csv("data/CardBase.csv")
+customer <- read_csv("data/CustomerBase.csv")
+fraud <- read_csv("data/FraudBase.csv")
+transaction <- read_csv("data/TransactionBase.csv")
+```
+
+```{r}
+card
+customer
+fraud
+transaction
+```
+
+```{r}
+#Question 2 ----
+card %>% 
+  inner_join(customer, by = "Cust_ID")
+```
+
+```{r}
+#Question 3 ----
+fraud %>% 
+  full_join(transaction, by = "Transaction_ID")
+```
+
+```{r}
+#Question 4 ----
+cards_with_transactions <- card %>%
+  semi_join(transaction, by = c("Card_Number" = "Credit_Card_ID"))
+
+```
+
+```{r}
+#Question 5 ----
+hats <- read_csv("data/hat_observations.csv")
+hats
+```
+
+
+```{r}
+#Question 5 cont ----
+
+hats_separate <- hats %>% 
+  separate(col = observation,
+           into = c("hat_colour", "hat_type"),
+           sep = ",")
+```
+
+```{r}
+#Question 6 ----
+
+hats_separate %>% 
+  unite(date, c("day", "month", "year"), sep = ":") %>%
+  filter(hat_type == "beret") %>% 
+  arrange(desc(observation_count))
+```
+
+```{r}
+#Extension Q1 ----
+```
+
+
+```{r}
+#Extension Q2 ----
+```
+
