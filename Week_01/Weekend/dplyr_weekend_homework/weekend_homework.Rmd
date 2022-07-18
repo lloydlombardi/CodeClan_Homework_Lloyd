@@ -118,7 +118,7 @@ pages_unknown %>%
 zero_ratings <- books %>%
   mutate(ratings_count = na_if(ratings_count, 0))
   
-zero_ratings <- zero_average_ratings %>% 
+zero_ratings <- zero_ratings %>% 
   drop_na(ratings_count)
 
 zero_ratings
@@ -139,7 +139,7 @@ books %>%
 ```
 
 ```{r}
-#Proportion of ratings:text reviews for books that have been given more than 100 rating scores ----
+#Find the books with the highest proportion of text reviews:ratings for books that have been given more than 100 rating scores ----
 
 books %>% 
   mutate(text_reviews_proportion = text_reviews_count/(ratings_count + text_reviews_count)*100,
@@ -159,6 +159,7 @@ books %>%
 ```
 
 ```{r}
+#Add a recommendation column that recommends books based on their ratings and page numbers ----
 books %>% 
   mutate(our_recommendation = case_when(
     average_rating < 1    & num_pages < 50  ~ "Don't read",
