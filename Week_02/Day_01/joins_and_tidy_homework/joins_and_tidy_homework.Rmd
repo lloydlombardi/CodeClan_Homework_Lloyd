@@ -26,7 +26,7 @@ transaction
 ```{r}
 #Question 2 ----
 card %>% 
-  inner_join(customer, by = "Cust_ID")
+  left_join(customer, by = "Cust_ID")
 ```
 
 ```{r}
@@ -38,7 +38,8 @@ fraud %>%
 ```{r}
 #Question 4 ----
 cards_with_transactions <- card %>%
-  semi_join(transaction, by = c("Card_Number" = "Credit_Card_ID"))
+  semi_join(transaction, by = c("Card_Number" = "Credit_Card_ID"),
+             copy = FALSE)
 
 ```
 
@@ -69,10 +70,32 @@ hats_separate %>%
 
 ```{r}
 #Extension Q1 ----
+
+join_1 <- card %>% 
+  inner_join(customer, by = "Cust_ID")
+
+join_2 <- join_1 %>% 
+  inner_join(transaction, by = c("Card_Number" = "Credit_Card_ID"))
+
+join_3 <- join_2 %>% 
+  inner_join(fraud, by = "Transaction_ID")
 ```
 
 
 ```{r}
 #Extension Q2 ----
+
+exams <- read_csv("data/exam_scores.csv")
+view(exams)
+```
+
+```{r}
+exams_longer <- exams %>% 
+  pivot_longer(cols = starts_with("exam"),
+               names_to = "exam_question",
+               values_to = "score",
+               names_prefix = "exam_")
+
+view(exams_longer)
 ```
 
