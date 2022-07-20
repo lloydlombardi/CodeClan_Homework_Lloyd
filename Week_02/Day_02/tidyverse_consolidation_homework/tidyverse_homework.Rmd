@@ -1,0 +1,126 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+library(janitor)
+```
+
+```{r}
+rtweet <- read_csv("data/code_clan_tweets.csv")
+```
+
+```{r}
+nrow(rtweet)
+```
+
+```{r}
+ncol(rtweet)
+```
+
+```{r}
+names(rtweet)
+```
+
+```{r}
+view(rtweet)
+```
+
+```{r}
+#Question 2 ----
+rtweet %>% 
+  select(favorite_count, is_quote) %>% 
+  filter(is_quote == FALSE) %>% 
+  summarise(count = sum(favorite_count))
+```
+
+```{r}
+#Quesiton 3 ----
+rtweet %>% 
+  group_by(source) %>% 
+  filter(is_quote == FALSE) %>% 
+  summarise(mean_rt_count = mean(retweet_count, na.rm = TRUE))
+```
+
+```{r}
+#Question 4 ----
+rtweet_q4 <- rtweet %>% 
+  mutate(media_type = coalesce(media_type, "text")) %>% 
+  group_by(media_type) %>% 
+  summarise(favorite_count_total = sum(favorite_count))
+
+rtweet_q4
+```
+
+
+```{r}
+#Question 5 ----
+rtweet %>% 
+  select(text) %>% 
+  summarise(text_count = nchar(text)) %>% 
+  summarise(average_text_count = mean(text_count)) 
+```
+
+```{r}
+#Question 6 ----
+
+code_clan_info <- read_csv("data/code_clan_info.csv")
+code_clan_info
+```
+
+```{r}
+#Question 6 cont ----
+
+rtweet <- rtweet %>% 
+  inner_join(code_clan_info, by = "tweet_id")
+
+rtweet
+```
+
+```{r}
+#Question 7 ----
+codeclan_hashtags <- rtweet %>% 
+  select(tweet_id, hashtags)
+
+codeclan_hashtags <- codeclan_hashtags %>% 
+  mutate(hashtags = str_to_lower(hashtags)) %>% 
+  drop_na()
+```
+
+```{r}
+#Extension Q8 ----
+
+codeclan_hashtags <- codeclan_hashtags %>%
+  mutate(hashtag_c = str_sub(hashtags, 1, 2),
+         hashtag_c = str_detect(hashtag_c, "c\\("))
+
+codeclan_hashtags
+```
+
+```{r}
+#Extension Q9 ----
+
+rtweet %>% 
+  mutate(text = str_to_title(text),
+         ed_count = str_detect(text, "Edinburgh"),
+         .after = "text") %>% 
+  summarise(total_ed_count = sum(ed_count))
+```
+
+```{r}
+view(codeclan_hashtags)
+```
+
+
+```{r}
+#Extension Q10 ----
+
+rtweet %>%
+  select(text) %>% 
+  mutate(twitter_users = str_extract_all(text, "@(?i)[a-z0-9_]+"),
+         .after = text) %>% 
+  unnest() #Need to use unnest() as there are multiple users within the same lines
+```
+
