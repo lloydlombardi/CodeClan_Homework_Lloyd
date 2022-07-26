@@ -218,7 +218,18 @@ FROM employees
 WHERE salary IS NOT NULL;
 	
 
-
+-- Update to above to include a return for NULL salaries
+SELECT 
+	first_name,
+	last_name,
+	salary,
+	CASE
+		WHEN salary <  40000 THEN 'low'
+		WHEN salary >= 40000 THEN 'high'
+		WHEN salary IS NULL  THEN 'INVALID SALARY' 
+	END salary_class
+FROM employees;
+	
 
 
 
