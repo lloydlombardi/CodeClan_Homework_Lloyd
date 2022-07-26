@@ -198,7 +198,7 @@ SELECT
 	first_name,
 	last_name,
 	department,
-	concat(first_name, ' ', last_name, ' - ', department, ' (joined ', TO_CHAR(EXTRACT(MONTH FROM start_date), 'Month'), ' ', EXTRACT(YEAR FROM start_date), ')') AS badge_label
+	concat(first_name, ' ', last_name, ' - ', department, ' (joined ', TO_CHAR(start_date, 'Month'), ' ', EXTRACT(YEAR FROM start_date), ')') AS badge_label
 FROM employees
 WHERE (first_name IS NOT NULL) AND (last_name IS NOT NULL) AND (department IS NOT NULL) AND (start_date IS NOT NULL);
 
@@ -217,7 +217,6 @@ SELECT
 FROM employees 
 WHERE salary IS NOT NULL;
 	
-
 
 
 
