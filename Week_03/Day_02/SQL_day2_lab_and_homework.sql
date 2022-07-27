@@ -85,7 +85,7 @@ SELECT
 	T."name" 
 FROM 
 	employees AS E
-INNER JOIN 
+LEFT JOIN 
 	teams AS T ON E.team_id = T.id; 
 
 
@@ -97,7 +97,7 @@ SELECT
 	count(E.id)
 FROM 
 	employees AS E
-INNER JOIN 
+LEFT JOIN 
 	teams AS T ON E.team_id = T.id
 GROUP BY 
 	team_name;
@@ -111,7 +111,7 @@ SELECT
 	count(E.id) AS team_members
 FROM 
 	employees AS E
-INNER JOIN 
+LEFT JOIN 
 	teams AS T ON E.team_id = T.id
 GROUP BY 
 	team_name
