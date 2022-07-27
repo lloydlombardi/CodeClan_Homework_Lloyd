@@ -402,9 +402,18 @@ INNER JOIN
 	ON e.department = d_c.department;
 
 
-
-
-	
+/*
+ * Question 2
+ */
+SELECT 
+	count(id) AS pension_count,
+	COALESCE ((CAST(pension_enrol AS varchar)), 'uknown')
+FROM 
+	employees 
+GROUP BY 
+	pension_enrol
+ORDER BY 
+	pension_enrol;	
 
 
 
