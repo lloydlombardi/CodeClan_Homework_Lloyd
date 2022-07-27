@@ -247,24 +247,169 @@ ORDER BY
 /*
  * Question 16
  */
-SELECT
-	department,
-	count(id),
-	CAST(grade AS REAL)
-FROM 
-	employees
-GROUP BY 
-	department, grade 
-HAVING 
-	grade = 1;
 
-
+-- CTE solution
+WITH dep_count AS (
+	SELECT
+		department,
+		count(id) AS emp_count_dep
+	FROM 
+		employees
+	GROUP BY 
+		department),
+	grade_count AS (
+	SELECT
+		department,
+		count(id) AS emp_count_grade
+	FROM
+		employees
+	WHERE 
+		grade = 1
+	GROUP BY 
+		department)
 SELECT 
-	count(id)
+	e.department,
+	(CAST(gr.emp_count_grade AS REAL)) / (CAST(dep.emp_count_dep AS REAL)) AS proportion
+FROM
+	employees AS e
+INNER JOIN 
+	dep_count AS dep
+	ON e.department = dep.department
+INNER JOIN
+	grade_count AS gr 
+	ON e.department = gr.department
+GROUP BY
+	e.department, gr.emp_count_grade, dep.emp_count_dep 
+ORDER BY 
+	e.department ;
+
+
+-- Neil's solution
+SELECT 	department,
+		round(sum(CAST((grade = 1) AS int))/CAST(count(id) AS real)*100) AS proportion_grade_ones
+		FROM employees 
+GROUP BY department
+ORDER BY 
+	department;
+
+
+
+/*
+ * Extension Questions
+ */
+
+
+/*
+ * Question 1
+ */
+
+WITH dep_salary AS (
+	SELECT
+		department,
+		avg(salary) AS dep_avg_salary
+	FROM 
+		employees
+	GROUP BY 
+		department),
+	dep_fte AS (
+	SELECT
+		department,
+		avg(fte_hours) AS dep_avg_fte
+	FROM 
+		employees 
+	GROUP BY 
+		department),
+	dep_count AS (
+	SELECT
+		department,
+		count(id)
+	FROM 
+		employees 
+	GROUP BY 
+		department
+	ORDER BY
+		count (id) DESC
+	LIMIT 1)
+SELECT
+	e.first_name ,
+	e.last_name ,
+	e.department ,
+	e.salary ,
+	e.fte_hours ,
+	ROUND(e.salary / d_s.dep_avg_salary, 2) AS salary_ratio,
+	ROUND(e.fte_hours / d_f.dep_avg_fte, 2) AS fte_ratio
 FROM 
-	employees 
-GROUP BY 
-	department ;
+	employees AS e
+INNER JOIN 
+	dep_salary AS d_s 
+	ON e.department  = d_s.department
+INNER JOIN 
+	dep_fte AS d_f 
+	ON e.department = d_f.department
+INNER JOIN 
+	dep_count AS d_c 
+	ON e.department = d_c.department;
+
+
+/*
+ * Question 1 Extensions
+ */
+WITH dep_salary AS (
+	SELECT
+		department,
+		avg(salary) AS dep_avg_salary
+	FROM 
+		employees
+	GROUP BY 
+		department),
+	dep_fte AS (
+	SELECT
+		department,
+		avg(fte_hours) AS dep_avg_fte
+	FROM 
+		employees 
+	GROUP BY 
+		department),
+	dep_count AS (
+	SELECT
+		department,
+		count(id)
+	FROM 
+		employees 
+	GROUP BY 
+		department
+	ORDER BY
+		count (id) DESC
+	FETCH FIRST 6 ROWS WITH TIES)
+SELECT
+	e.first_name ,
+	e.last_name ,
+	e.department ,
+	e.salary ,
+	e.fte_hours ,
+	ROUND(e.salary / d_s.dep_avg_salary, 2) AS salary_ratio,
+	ROUND(e.fte_hours / d_f.dep_avg_fte, 2) AS fte_ratio
+FROM 
+	employees AS e
+INNER JOIN 
+	dep_salary AS d_s 
+	ON e.department  = d_s.department
+INNER JOIN 
+	dep_fte AS d_f 
+	ON e.department = d_f.department
+INNER JOIN 
+	dep_count AS d_c 
+	ON e.department = d_c.department;
+
+
+
+
+	
+
+
+
+
+
 
 
 
