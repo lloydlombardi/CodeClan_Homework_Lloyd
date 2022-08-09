@@ -45,8 +45,7 @@ kb_unit_1 %>%
   geom_line() +
    labs(x = "\nDate",
        y = "Sales ($)",
-       title = "Monthly Sales of KwikBit Unit 1\n") +
-  my_theme()
+       title = "Monthly Sales of KwikBit Unit 1\n") 
 ```
 
 
@@ -108,76 +107,122 @@ view(device)
 
 
 ```{r}
-device_1 <- device %>% 
-  filter(device == "qikbit1")
+person_1 <- device %>% 
+  filter(id == "person1")
 
-device_1 %>%
+person_1 %>%
   ggplot(aes(x = hours,
               y = counts,
               group = device,
               colour = device)) +
   geom_line() +
-  facet_wrap(id ~ device)
+  facet_wrap(id ~ device) +
+  labs(x = "\nHours",
+       y = "Step Count",
+       title = "Person 1 Device Comparison\n",
+       colour = "Devices")
 ```
 
 
 ```{r}
-device_2 <- device %>% 
-  filter(device == "competitor1")
+person_2 <- device %>% 
+  filter(id == "person2")
 
-device_2 %>%
+person_2 %>%
   ggplot(aes(x = hours,
               y = counts,
               group = device,
               colour = device)) +
   geom_line() +
-  facet_wrap(id ~ device)
+  facet_wrap(id ~ device) +
+  labs(x = "\nHours",
+       y = "Step Count",
+       title = "Person 2 Device Comparison\n",
+       colour = "Devices")
 ```
 
 
 ```{r}
-device_3 <- device %>% 
-  filter(device == "competitor2")
+person_3 <- device %>% 
+  filter(id == "person3")
 
-device_3 %>%
+person_3 %>%
   ggplot(aes(x = hours,
               y = counts,
               group = device,
               colour = device)) +
   geom_line() +
-  facet_wrap(id ~ device)
+  facet_wrap(id ~ device) +
+  labs(x = "\nHours",
+       y = "Step Count",
+       title = "Person 3 Device Comparison\n",
+       colour = "Devices")
 ```
 
 
 ```{r}
-device_4 <- device %>% 
-  filter(device == "competitor3")
+person_4 <- device %>% 
+  filter(id == "person4")
 
-device_4 %>%
+person_4 %>%
   ggplot(aes(x = hours,
               y = counts,
               group = device,
               colour = device)) +
   geom_line() +
-  facet_wrap(id ~ device)
+  facet_wrap(id ~ device) +
+  labs(x = "\nHours",
+       y = "Step Count",
+       title = "Person 4 Device Comparison\n",
+       colour = "Devices")
 ```
+
+
+```{r}
+person_5 <- device %>% 
+  filter(id == "person5")
+
+person_5 %>%
+  ggplot(aes(x = hours,
+              y = counts,
+              group = device,
+              colour = device)) +
+  geom_line() +
+  facet_wrap(id ~ device) +
+  labs(x = "\nHours",
+       y = "Step Count",
+       title = "Person 5 Device Comparison\n",
+       colour = "Devices")
+```
+
 
 
 ```{r}
 col_scheme <- c("#E89FE9", "#50434F", "#B6A7B5", "#F9A472", "#BD7040")
 
-my_theme <- function() {
-  ?theme(
-    panel.border = element_rect (colour = "black", fill = NA, linetype = 1),
+my_theme <- theme(
+    text = element_text(size = 12),
+    title = element_text(size = 14),
+    axis.text = element_text(size = 10),
     panel.background = element_rect(fill = "white"),
-    panel.grid.major.x = element_line(colour = "steelblue", linetype = 3, size = 0.5),
-    panel.grid.minor.x = element_blank(),
-    panel.grid.major.y =  element_line(colour = "steelblue", linetype = 3, size = 0.5),
-    panel.grid.minor.y = element_blank(),
-    axis.text = element_text(colour = "black", face = "italic", family = "Times New Roman", size = 12),
-    axis.title = element_text(colour = "steelblue", family = "Times New Roman", size = 16),
-    plot.background = element_rect(colour = "white", fill = col_scheme)
+    panel.grid = element_line(colour = "grey90", linetype = "dashed")
   )
-}
+```
+
+
+```{r}
+revenue %>% 
+  ggplot(aes(x = year,
+             y = revenue,
+             fill = product)) +
+  geom_col() +
+  labs(x = "\nYear",
+       y = "Revenue ($)",
+       title = "2018/19 Product Revenue",
+       subtitle = "Breakdown by product\n",
+       fill = "Product") +
+  scale_fill_manual(values = col_scheme) +
+  my_theme
+
 ```
 
