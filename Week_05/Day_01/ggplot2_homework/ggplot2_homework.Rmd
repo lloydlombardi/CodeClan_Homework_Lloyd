@@ -1,0 +1,183 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+library(CodeClanData)
+```
+
+```{r}
+revenue <- qb_revenue_breakdown %>% janitor::clean_names()
+
+sales <- qb_monthly_sales  %>% janitor::clean_names()
+
+competitors <- qb_competitors %>% janitor::clean_names()
+
+device <- qb_device_data %>% janitor::clean_names()
+
+```
+
+
+# 1. Take the data in the dataset qb_revenue_breakdown and make a stacked bar chart showing the sources of revenue across the two years in the dataset.
+```{r}
+revenue %>% 
+  ggplot(aes(x = year,
+             y = revenue,
+             fill = product)) +
+  geom_col() +
+  labs(x = "\nYear",
+       y = "Revenue ($)",
+       title = "2018/19 Product Revenue",
+       subtitle = "Breakdown by product\n",
+       fill = "Product") 
+```
+
+# 2. Make a line chart showing monthly sales of the “flagship product” - the ‘KwikBit Unit 1’ - over the last year.
+```{r}
+kb_unit_1 <- sales %>% 
+  filter(cashflow == "Kwikbit Unit 1 Sales")
+
+kb_unit_1 %>% 
+  ggplot(aes(x = date,
+             y = amount)) +
+  geom_line() +
+   labs(x = "\nDate",
+       y = "Sales ($)",
+       title = "Monthly Sales of KwikBit Unit 1\n") +
+  my_theme()
+```
+
+
+# 3. Make a line chart showing monthly revenue and costs over the last year. This data is also in qb_monthly_sales.
+```{r}
+sales_and_revenue <- sales %>% 
+  filter(cashflow != "Kwikbit Unit 1 Sales")
+
+sales_and_revenue %>% 
+  ggplot(aes(x = date,
+             y = amount,
+             group = cashflow,
+             colour = cashflow)) +
+  geom_line() +
+  facet_wrap(~ cashflow,
+             nrow = 1,
+             scales = "free_y") +
+  labs(x = "\nDate",
+       y = "Amount ($)",
+       title = "Monthly Cost vs Revenue\n")
+```
+
+# 4. Show annual sales of personal fitness trackers over the last 5 years broken down by company as a ribbon plot (use geom_area). 
+
+```{r}
+competitors %>% 
+  ggplot(aes(x = year,
+             y = revenue,
+             fill = company)) +
+  geom_area() +
+    labs(x = "\nYear",
+       y = "Revenue ($)",
+       title = "Annual Competitor Sales\n",
+       fill = "Competitors")
+```
+
+# 5. Now show the sales from the four competitors as a line graph. Include an extra layer that shows the data points used to make the lines.
+```{r}
+competitors %>% 
+  ggplot(aes(x = year,
+             y = revenue,
+             group = company,
+             colour = company)) +
+  geom_line() + 
+  geom_point() +
+  labs(x = "\nYear",
+       y = "Revenue ($)",
+       title = "Annual Competitor Sales\n",
+       colour = "Competitors")
+```
+
+```{r}
+view(device)
+```
+
+
+
+# 6. Now the company wants to compare the number of steps that their device counts vs. their competitors. Make a line graph of the number of steps throughout time, and use faceting to compare between companies and people.
+
+
+```{r}
+device_1 <- device %>% 
+  filter(device == "qikbit1")
+
+device_1 %>%
+  ggplot(aes(x = hours,
+              y = counts,
+              group = device,
+              colour = device)) +
+  geom_line() +
+  facet_wrap(id ~ device)
+```
+
+
+```{r}
+device_2 <- device %>% 
+  filter(device == "competitor1")
+
+device_2 %>%
+  ggplot(aes(x = hours,
+              y = counts,
+              group = device,
+              colour = device)) +
+  geom_line() +
+  facet_wrap(id ~ device)
+```
+
+
+```{r}
+device_3 <- device %>% 
+  filter(device == "competitor2")
+
+device_3 %>%
+  ggplot(aes(x = hours,
+              y = counts,
+              group = device,
+              colour = device)) +
+  geom_line() +
+  facet_wrap(id ~ device)
+```
+
+
+```{r}
+device_4 <- device %>% 
+  filter(device == "competitor3")
+
+device_4 %>%
+  ggplot(aes(x = hours,
+              y = counts,
+              group = device,
+              colour = device)) +
+  geom_line() +
+  facet_wrap(id ~ device)
+```
+
+
+```{r}
+col_scheme <- c("#E89FE9", "#50434F", "#B6A7B5", "#F9A472", "#BD7040")
+
+my_theme <- function() {
+  ?theme(
+    panel.border = element_rect (colour = "black", fill = NA, linetype = 1),
+    panel.background = element_rect(fill = "white"),
+    panel.grid.major.x = element_line(colour = "steelblue", linetype = 3, size = 0.5),
+    panel.grid.minor.x = element_blank(),
+    panel.grid.major.y =  element_line(colour = "steelblue", linetype = 3, size = 0.5),
+    panel.grid.minor.y = element_blank(),
+    axis.text = element_text(colour = "black", face = "italic", family = "Times New Roman", size = 12),
+    axis.title = element_text(colour = "steelblue", family = "Times New Roman", size = 16),
+    plot.background = element_rect(colour = "white", fill = col_scheme)
+  )
+}
+```
+
