@@ -88,14 +88,17 @@ The heaviest bag, however, is carried by a Male
 
 # 6. What proportion of students report back pain?
 ```{r}
-bar_plot <- backpack %>%
+bar_plot_data <- backpack %>%
   mutate(back_problems = as.character(back_problems)) %>% 
   mutate(back_problems = recode(back_problems,
                                 "1" = "Yes",
                                 "0" = "No")) %>% 
   mutate(back_problems = as.factor(back_problems)) %>% 
   group_by(back_problems) %>% 
-  summarise(count = n()) %>% 
+  summarise(count = n())
+  
+
+bar_plot <- bar_plot_data %>%   
   ggplot(aes(x = "",
              y = count,
              fill = back_problems)) +
@@ -106,9 +109,10 @@ bar_plot <- backpack %>%
        fill = "Back Problems") 
 
 pie <- bar_plot +
-  coord_polar("y", start = 0) +
+  geom_text(aes(label = paste0(count / sum(count) * 100, "%")), size = 5, y = c(75, 15)) +
+  coord_polar(theta = "y", start = 0) +
   scale_fill_brewer(palette = "Dark2") +
-  theme_minimal() 
+  theme_void() 
 pie
 ```
 A pie chart was created to find the proportion of students that have back pain
@@ -119,7 +123,7 @@ It can be seen that around 1/3 of students reported back pain
 
 # 7. Is this proportion different between men and women?
 ```{r}
-bar_plot_male <- backpack %>%
+bar_plot_male_data <- backpack %>%
   filter(sex == "Male") %>% 
   mutate(back_problems = as.character(back_problems)) %>% 
   mutate(back_problems = recode(back_problems,
@@ -128,7 +132,9 @@ bar_plot_male <- backpack %>%
   mutate(back_problems = as.factor(back_problems)) %>% 
   group_by(back_problems) %>% 
   summarise(count = n()) %>%
-  mutate(across(.cols = where(is.numeric), .fns = ~count/45 * 100)) %>% 
+  mutate(across(.cols = where(is.numeric), .fns = ~count/45 * 100))
+
+bar_plot_male <- bar_plot_male_data %>% 
   ggplot(aes(x = "",
              y = count,
              fill = back_problems)) +
@@ -140,7 +146,10 @@ bar_plot_male <- backpack %>%
 
 
 pie_male <- bar_plot_male +
-  coord_polar("y", start = 0)
+  geom_text(aes(label = paste0(round(count / sum(count) * 100), "%")), size = 5, y = c(90, 10)) +
+  coord_polar(theta = "y", start = 0) +
+  scale_fill_brewer(palette = "Dark2") +
+  theme_void() 
 pie_male
 
 
@@ -165,7 +174,7 @@ bar_plot_female <- backpack %>%
 
 
 pie_female <- bar_plot_female +
-  coord_polar("y", start = 0)
+  coord_polar(theta = "y", start = 0)
 pie_female
 ```
 2 more pie charts were created to find the difference in percentage between males and females that reported back pain
@@ -173,6 +182,8 @@ It can be seen that there is a large disparity between the sexes
 Less than 25% of Males reported back pain whilst over 40% of Females reported backpain
 
 
+
+# 8. Now you’ve investigated your data separately, create plots to describe the relationship between backpack weight, body weight, gender and reported backpain.
 
 
 ```{r}
@@ -195,4 +206,4 @@ relationship_plot <- backpack %>%
 
 relationship_plot
 ```
-
+A scatter plot with different shapes and colour was used to plot the correlation between bodyweight, backpack weight, back problems and gender
