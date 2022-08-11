@@ -61,19 +61,6 @@ ui <- fluidPage(
                   max = max_year,
                   value = c(min_year, max_year),
                   sep = ""
-      ),
-      
-      fluidRow(
-        
-        column(4,
-               actionButton(inputId = "update_scatt",
-                            label = "Update Scatter")
-        ),
-        
-        column(4,
-               actionButton(inputId = "update_line",
-                            label = "Update \n Line")
-        )
       )
     ),
     
@@ -95,7 +82,10 @@ ui <- fluidPage(
                             choices = point_shape,
                             inline = TRUE
                )
-        )
+        ),
+        
+        actionButton(inputId = "update_scatt",
+                     label = "Update Chart")
       ),
       
       tabsetPanel(
@@ -108,6 +98,8 @@ ui <- fluidPage(
                  DT::dataTableOutput("table_output")
         )
       ),
+      
+      br(),
       
       fluidRow(
         
@@ -124,7 +116,10 @@ ui <- fluidPage(
                            label = tags$h4("Choose the publisher"),
                            choices = all_publishers
                )
-        )
+        ),
+        
+        actionButton(inputId = "update_line",
+                     label = "Update Chart")
       ),
       
       plotOutput("year_v_sales")
@@ -138,13 +133,13 @@ ui <- fluidPage(
 
 server <- function(input, output) {
   
-  filtered_data_scatter <- eventReactive(input$update_scatt, {
+  filtered_data_scatter <- reactive({
     games %>% 
       filter(rating == input$rating_choice,
              genre == input$genre_choice)
   })
   
-  filtered_data_line <- eventReactive(input$update_line, {
+  filtered_data_line <- reactive({
     games %>% 
       filter(year_of_release > input$year_choice[1] & year_of_release < input$year_choice[2])
   })
