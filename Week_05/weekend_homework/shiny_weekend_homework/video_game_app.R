@@ -45,23 +45,35 @@ ui <- fluidPage(
       
       br(),
       
+      titlePanel(tags$h2("Scatter Plot Settings")),
+      
       radioButtons(inputId = "rating_choice",
-                   label = tags$h2("Select a Rating"),
+                   label = tags$h3("Select a Rating"),
                    choices =  all_ratings
       ),
       
       selectInput(inputId = "genre_choice",
-                  label = tags$h2("Choose a Genre"),
+                  label = tags$h3("Choose a Genre"),
                   choices =  all_genres
       ),
       
+      actionButton(inputId = "create_scatt",
+                   label = "Create Scatter Plot"),
+      
+      br(),
+      
+      titlePanel(tags$h2("Line Graph Settings")),
+      
       sliderInput(inputId = "year_choice",
-                  label = tags$h2("Choose a Year"),
+                  label = tags$h3("Choose a Year"),
                   min = min_year,
                   max = max_year,
                   value = c(min_year, max_year),
                   sep = ""
-      )
+      ),
+      
+      actionButton(inputId = "create_bar",
+                   label = "Create Bar Plot")
     ),
     
     mainPanel = mainPanel(
@@ -141,14 +153,24 @@ server <- function(input, output) {
   
   filtered_data_line <- reactive({
     games %>% 
-      filter(year_of_release > input$year_choice[1] & year_of_release < input$year_choice[2])
+      filter(year_of_release > input$year_choice[1] & year_of_release < input$year_choice[2],
+             publisher == input$publisher_choice)
+  })
+  
+  scatter_update <- eventReactive(input$update_scatt, {
+    input$colour_choice
+  })
+  
+  
+  bar_update <- eventReactive(input$update_line, {
+    input$colour_choice_2
   })
   
   output$user_v_critic <- renderPlot({
     filtered_data_scatter() %>% 
       ggplot(aes(x = user_score,
                  y = critic_score)) +
-      geom_point(shape = as.integer(input$shape_choice), colour = input$colour_choice, show.legend = FALSE, size = 3) +
+      geom_point(shape = as.integer(input$shape_choice), colour = scatter_update(), show.legend = FALSE, size = 3) +
       labs(x = "User Score",
            y = "Critic Score",
            title = "The Relationship Between the User Score and Critic Score")
@@ -162,7 +184,7 @@ server <- function(input, output) {
     filtered_data_line() %>% 
       ggplot(aes(x = year_of_release,
                  y = sales)) +
-      geom_line(colour = input$colour_choice_2, size = 1) +
+      geom_col(fill = bar_update()) +
       labs(x = "Year of Release",
            y = "Sales (%)",
            title = "Sales % vs Year of Release")
