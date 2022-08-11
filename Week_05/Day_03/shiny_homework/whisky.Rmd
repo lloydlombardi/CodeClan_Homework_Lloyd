@@ -82,7 +82,7 @@ whisky %>%
   mutate(count = n()/12) %>% 
   ungroup() %>% 
   filter(count > 1) %>%
-  filter(year_found > 1800 & year_found < 1850) %>% 
+  filter(year_found == 1810) %>% 
   ggplot(aes(x = year_found,
              y = capacity,
              colour = owner)) +
@@ -99,5 +99,12 @@ whisky %>%
            y = "Capacity",
            colour = "Distillery Owner",
            title = "Distillery Capacity by Year Founed\n")
+```
+
+```{r}
+whisky %>% 
+  group_by(year_found) %>% 
+  summarise(count = n()) %>% 
+  arrange(desc(count))
 ```
 

@@ -28,8 +28,6 @@ ui <- fluidPage(
   
   theme = bs_theme(bootswatch = "superhero"),
   
-  titlePanel(tags$h1("Whisky Notes")),
-  
   sidebarLayout(
     sidebarPanel = sidebarPanel(
       tags$h2("Whisky Information"),
@@ -45,10 +43,11 @@ ui <- fluidPage(
                   ),
       
       dateRangeInput(inputId = "year_input",
-                     label = strong("Year Distillery Founded"),
-                     format = "yyyy",
-                     min = 1600,
-                     max = 2022)
+                label = strong("Year Distillery Founded"),
+                format = "yyyy",
+                min = "1600-01-01",
+                max = "2022-01-01"),
+      titlePanel(tags$h1("Whisky Notes")),
     ),
     
     mainPanel = mainPanel(
@@ -92,7 +91,7 @@ server <- function(input, output) {
       mutate(count = n()/12) %>% 
       ungroup() %>% 
       filter(count > 1) %>%
-      filter(year_found == input$year_input) %>% 
+      filter(year_found > 1820 & year_found < 1890) %>% 
       ggplot(aes(x = year_found,
                  y = capacity,
                  colour = owner)) +
