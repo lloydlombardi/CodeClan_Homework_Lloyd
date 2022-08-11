@@ -1,17 +1,16 @@
-#
-# This is a Shiny web application. You can run the application by clicking
-# the 'Run App' button above.
-#
-# Find out more about building applications with Shiny here:
-#
-#    http://shiny.rstudio.com/
-#
+
+# packages ----------------------------------------------------------------
 
 library(shiny)
 library(tidyverse)
 library(bslib)
 library(CodeClanData)
 library(janitor)
+library(plotly)
+library(shinyWidgets)
+
+
+# wrangling ---------------------------------------------------------------
 
 whisky <- CodeClanData::whisky %>% clean_names()
 
@@ -24,14 +23,25 @@ all_regions <- unique(whisky$region)
 
 all_distilleries <- unique(whisky$distillery)
 
+min_year <- min(whisky$year_found)
+max_year <- max(whisky$year_found)
+
+
+
+# ui ----------------------------------------------------------------------
+
 ui <- fluidPage(
   
   theme = bs_theme(bootswatch = "superhero"),
   
   sidebarLayout(
+    
     sidebarPanel = sidebarPanel(
+      
       tags$h2("Whisky Information"),
+      
       p(strong("Types of Whisky")),
+      
       radioButtons(inputId = "region_input",
                    label = strong("Whisky Region"),
                    choices = all_regions
@@ -42,24 +52,37 @@ ui <- fluidPage(
                   choices = all_distilleries
                   ),
       
-      dateRangeInput(inputId = "year_input",
-                label = strong("Year Distillery Founded"),
-                format = "yyyy",
-                min = "1600-01-01",
-                max = "2022-01-01"),
-      titlePanel(tags$h1("Whisky Notes")),
+      numericRangeInput(inputId = "year_input",
+                        label = strong("Year Distillery Founded"),
+                        value = c(min_year, max_year)),
+      
+      titlePanel(tags$h1("Whisky Notes"))
     ),
     
     mainPanel = mainPanel(
+      
       br(),
+      
       plotOutput("whisky_plot"),
+      
       br(),
+      
       plotOutput("year_plot"),
+      
+      
+      # verbatimTextOutput("info"),
+      # 
+      # plotOutput("info", hover = "year_input"),
       
       tags$a("The Whisky Association website", href = "https://www.scotch-whisky.org.uk/")
     )
   )
 )
+
+
+
+# server ------------------------------------------------------------------
+
 server <- function(input, output) {
   
   output$whisky_plot <- renderPlot({
@@ -74,11 +97,11 @@ server <- function(input, output) {
       scale_y_continuous(limits = c(0, 4)) +
       theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1, size = 14),
             axis.text.y = element_text(size = 14),
-            axis.title.x = element_text(size = 20),
-            axis.title.y = element_text(size = 20),
-            legend.title = element_text(size = 20),
+            axis.title.x = element_text(size = 16),
+            axis.title.y = element_text(size = 16),
+            legend.title = element_text(size = 16),
             legend.text = element_text(size = 14),
-            plot.title = element_text(size = 48)) +
+            plot.title = element_text(size = 32)) +
       labs(x = "Notes",
            y = "Score",
            fill = "Whisky Region",
@@ -91,25 +114,35 @@ server <- function(input, output) {
       mutate(count = n()/12) %>% 
       ungroup() %>% 
       filter(count > 1) %>%
-      filter(year_found > 1820 & year_found < 1890) %>% 
+      filter(year_found > input$year_input[1] & year_found < input$year_input[2]) %>% 
       ggplot(aes(x = year_found,
                  y = capacity,
                  colour = owner)) +
-      geom_point(aes(shape = region)) +
+      geom_point(aes(shape = region), size = 3) +
       theme(axis.text.x = element_text(size = 14),
             axis.text.y = element_text(size = 14),
-            axis.title.x = element_text(size = 20),
-            axis.title.y = element_text(size = 20),
-            legend.title = element_text(size = 20),
+            axis.title.x = element_text(size = 16),
+            axis.title.y = element_text(size = 16),
+            legend.title = element_text(size = 16),
             legend.text = element_text(size = 14),
-            plot.title = element_text(size = 48)) +
+            plot.title = element_text(size = 32)) +
       scale_y_continuous(labels = scales::comma) +
       labs(x = "Year Founded",
            y = "Capacity",
            colour = "Distillery Owner",
-           title = "Distillery Capacity by Year Founed\n")
+           title = "Distillery Capacity by Year Founed\n",
+           shape = "Region")
   })
+  
+  # output$info <- renderPrint({
+  #   
+  #   nearPoints(year_plot, input$year_input, xvar = "Year Founded", yvar = "Capacity")
+    
+  # })
 }
+
+
+# run ---------------------------------------------------------------------
 
 # Run the application 
 shinyApp(ui = ui, server = server)

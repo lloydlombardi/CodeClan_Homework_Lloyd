@@ -77,12 +77,12 @@ all_distilleries <- unique(whisky$distillery)
 
 
 ```{r}
-whisky %>%
+p <- whisky %>%
   group_by(owner) %>% 
   mutate(count = n()/12) %>% 
   ungroup() %>% 
   filter(count > 1) %>%
-  filter(year_found == 1810) %>% 
+  filter(year_found > 1810 & year_found < 1840) %>% 
   ggplot(aes(x = year_found,
              y = capacity,
              colour = owner)) +
@@ -99,6 +99,8 @@ whisky %>%
            y = "Capacity",
            colour = "Distillery Owner",
            title = "Distillery Capacity by Year Founed\n")
+
+plotly::ggplotly(p)
 ```
 
 ```{r}
