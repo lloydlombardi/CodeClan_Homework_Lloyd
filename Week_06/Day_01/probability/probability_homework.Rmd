@@ -1,0 +1,88 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+library(gtools)
+library(janitor)
+
+titanic <- read_csv("data/titanic.csv")
+
+source("prob.R")
+```
+
+
+```{r}
+titanic %>% 
+  distinct(class)
+```
+
+```{r}
+titanic <- titanic %>% 
+  mutate(class = recode(class,
+                        "3rd" = "passenger",
+                        "2nd" = "passenger",
+                        "1st" = "passenger",
+                        "engineering crew" = "crew",
+                        "victualling crew" = "crew",
+                        "restaurant staff" = "crew",
+                        "deck crew" = "crew"))
+```
+
+```{r}
+titanic <- titanic %>% 
+  mutate(survived = recode(survived,
+                           "no" = FALSE,
+                           "yes" = TRUE))
+```
+
+
+```{r}
+titanic %>% 
+  tabyl(class, survived) %>% 
+  adorn_totals(where = c("row", "col")) %>% 
+  adorn_title()
+```
+
+
+```{r}
+prob_crew_surv <- titanic %>% 
+  filter(class == "crew" & survived) %>% 
+  summarise(prob = n() / nrow(titanic))
+
+prob_crew_surv
+```
+Of all passengers on board, 9.5% were crew members that survived
+
+
+```{r}
+prob_pass_surv <- titanic %>% 
+  filter(class == "passenger" & survived) %>% 
+  summarise(prob = n() / nrow(titanic))
+
+prob_pass_surv
+```
+Of all passengers on board, 22.6% were passengers that survived
+
+
+```{r}
+prob_surv_given_crew <- titanic %>% 
+  filter(class == "crew") %>% 
+  summarise(prob = sum(survived) / n())
+
+prob_surv_given_crew
+```
+23.7% of all crew members survived
+
+
+```{r}
+prob_surv_given_pass <- titanic %>% 
+  filter(class == "passenger") %>% 
+  summarise(prob = sum(survived) / n())
+
+prob_surv_given_pass
+```
+38% of all passenger survived
+
