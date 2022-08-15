@@ -31,6 +31,9 @@ all_publishers <- games %>%
   arrange(publisher) %>% 
   pull()
 
+
+plot_choice <- c("Bar", "Horizontal Bar")
+
 # ui ----------------------------------------------------------------------
 
 ui <- fluidPage(
@@ -41,39 +44,47 @@ ui <- fluidPage(
     
     sidebarPanel = sidebarPanel(
       
-      titlePanel(tags$h1("Video Game Information")),
-      
-      br(),
+      titlePanel(tags$h1("Video Games")),
       
       titlePanel(tags$h2("Scatter Plot Settings")),
       
       radioButtons(inputId = "rating_choice",
-                   label = tags$h3("Select a Rating"),
-                   choices =  all_ratings
+                   label = tags$h3("Rating"),
+                   choices =  all_ratings,
+                   inline = TRUE
       ),
       
       selectInput(inputId = "genre_choice",
-                  label = tags$h3("Choose a Genre"),
+                  label = tags$h3("Genre"),
                   choices =  all_genres
       ),
       
-      actionButton(inputId = "create_scatt",
-                   label = "Create Scatter Plot"),
-      
       br(),
       
-      titlePanel(tags$h2("Line Graph Settings")),
+      titlePanel(tags$h2("Bar Graph Settings")),
       
       sliderInput(inputId = "year_choice",
-                  label = tags$h3("Choose a Year"),
+                  label = tags$h3("Year Released"),
                   min = min_year,
                   max = max_year,
                   value = c(min_year, max_year),
                   sep = ""
       ),
       
-      actionButton(inputId = "create_bar",
-                   label = "Create Bar Plot")
+      selectInput(inputId = "publisher_choice",
+                  label = tags$h4("Choose the publisher"),
+                  choices = all_publishers
+      ),
+      
+      numericInput(inputId = "number_input",
+                   label = tags$h4("Video Game Fund ($)"),
+                   value = 10000
+      ),
+      
+      actionButton(inputId = "donate_button",
+                   label = "Click to donate $100"
+                   )
+      
     ),
     
     mainPanel = mainPanel(
@@ -97,7 +108,7 @@ ui <- fluidPage(
         ),
         
         actionButton(inputId = "update_scatt",
-                     label = "Update Chart")
+                     label = "Update Scatter Chart")
       ),
       
       tabsetPanel(
@@ -124,14 +135,15 @@ ui <- fluidPage(
         ),
         
         column(4,
-               selectInput(inputId = "publisher_choice",
-                           label = tags$h4("Choose the publisher"),
-                           choices = all_publishers
+               radioButtons(inputId = "bar_choice",
+                            label = tags$h4("Select the type of bar chart"),
+                            choices = plot_choice,
+                            inline = TRUE
                )
         ),
         
         actionButton(inputId = "update_line",
-                     label = "Update Chart")
+                     label = "Update Bar Chart")
       ),
       
       plotOutput("year_v_sales")
@@ -143,7 +155,7 @@ ui <- fluidPage(
 
 # server ------------------------------------------------------------------
 
-server <- function(input, output) {
+server <- function(input, output, session) {
   
   filtered_data_scatter <- reactive({
     games %>% 
@@ -151,29 +163,49 @@ server <- function(input, output) {
              genre == input$genre_choice)
   })
   
-  filtered_data_line <- reactive({
+  filtered_data_bar <- reactive({
     games %>% 
       filter(year_of_release > input$year_choice[1] & year_of_release < input$year_choice[2],
              publisher == input$publisher_choice)
   })
   
-  scatter_update <- eventReactive(input$update_scatt, {
+  scatter_colour_update <- eventReactive(input$update_scatt, {
     input$colour_choice
   })
   
+  scatter_shape_update <- eventReactive(input$update_scatt, {
+    as.integer(input$shape_choice)
+  })
   
-  bar_update <- eventReactive(input$update_line, {
+  
+  bar_colour_update <- eventReactive(input$update_line, {
     input$colour_choice_2
+  })
+  
+  bar_type_update <- eventReactive(input$update_line, {
+    input$bar_choice
   })
   
   output$user_v_critic <- renderPlot({
     filtered_data_scatter() %>% 
       ggplot(aes(x = user_score,
                  y = critic_score)) +
-      geom_point(shape = as.integer(input$shape_choice), colour = scatter_update(), show.legend = FALSE, size = 3) +
+      geom_point(shape = scatter_shape_update(), colour = scatter_colour_update(), show.legend = FALSE, size = 3) +
       labs(x = "User Score",
            y = "Critic Score",
-           title = "The Relationship Between the User Score and Critic Score")
+           title = "The Relationship Between the User Score and Critic Score",
+           subtitle = paste("Genre: ", input$genre_choice, "  Rating ", input$rating_choice, "\n")) +
+      theme(axis.title = element_text(size = 16),
+            plot.title = element_text(size = 24),
+            plot.subtitle = element_text(size = 16),
+            panel.background = element_rect(fill = "aliceblue",
+                                            colour = "aliceblue",
+                                            size = 0.5, linetype = "solid"),
+            panel.grid.major = element_line(size = 0.5, linetype = 'solid',
+                                            colour = "white"), 
+            panel.grid.minor = element_line(size = 0.25, linetype = 'solid',
+                                            colour = "white")
+      )
   })
   
   output$table_output <- DT::renderDataTable({
@@ -181,15 +213,63 @@ server <- function(input, output) {
   })
   
   output$year_v_sales <- renderPlot({
-    filtered_data_line() %>% 
-      ggplot(aes(x = year_of_release,
-                 y = sales)) +
-      geom_col(fill = bar_update()) +
-      labs(x = "Year of Release",
-           y = "Sales (%)",
-           title = "Sales % vs Year of Release")
+    if (bar_type_update() == "Bar") {
+      p1 <- filtered_data_bar() %>% 
+        ggplot(aes(x = year_of_release,
+                   y = sales)) +
+        geom_col(fill = bar_colour_update()) +
+        scale_y_continuous(expand = c(0, 0)) +
+        labs(x = "Year of Release",
+             y = "Sales (m$)",
+             title = "Year of Release vs Sales",
+             subtitle = paste("Publisher: ", input$publisher_choice, "  Year of release: ", input$year_choice[1], " - ", input$year_choice[2], "\n")) +
+        theme(axis.title = element_text(size = 16),
+              plot.title = element_text(size = 24),
+              plot.subtitle = element_text(size = 16), 
+              panel.background = element_rect(fill = "aliceblue",
+                                              colour = "aliceblue",
+                                              size = 0.5, linetype = "solid"),
+              panel.grid.major = element_line(size = 0.5, linetype = 'solid',
+                                              colour = "white"), 
+              panel.grid.minor = element_line(size = 0.25, linetype = 'solid',
+                                              colour = "white")
+        )
+    }
+    if (bar_type_update() == "Horizontal Bar") {
+      p1 <- filtered_data_bar() %>% 
+        ggplot(aes(x = year_of_release,
+                   y = sales)) +
+        geom_col(fill = bar_colour_update()) +
+        scale_y_continuous(expand = c(0, 0)) +
+        coord_flip() +
+        labs(x = "Year of Release",
+             y = "Sales (m$)",
+             title = "Year of Release vs Sales",
+             subtitle = paste("Publisher: ", input$publisher_choice, "  Year of release: ", input$year_choice[1], " - ", input$year_choice[2], "\n"))
+      theme(axis.title = element_text(size = 16),
+            plot.title = element_text(size = 24),
+            plot.subtitle = element_text(size = 16),
+            panel.background = element_rect(fill = "aliceblue",
+                                            colour = "aliceblue",
+                                            size = 0.5, linetype = "solid"),
+            panel.grid.major = element_line(size = 0.5, linetype = 'solid',
+                                            colour = "white"), 
+            panel.grid.minor = element_line(size = 0.25, linetype = 'solid',
+                                            colour = "white")
+      )
+    }
+    p1
   })
   
+  counter <- reactiveValues(counter_value = 10000)
+  
+  observeEvent(input$donate_button, {
+    counter$counter_value <- counter$counter_value + 100
+  })
+  
+  observeEvent(input$donate_button, {
+    updateNumericInput(session, "number_input", value = counter$counter_value)
+  })
 }
 
 
