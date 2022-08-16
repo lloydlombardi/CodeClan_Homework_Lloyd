@@ -84,5 +84,63 @@ prob_surv_given_pass <- titanic %>%
 
 prob_surv_given_pass
 ```
-38% of all passenger survived
+38% of all passengers survived
+
+
+# Question 1.
+If I roll a six-sided dice once, what is the probability of getting a number less than 5?
+```{r}
+one_die <- rolldie(1) 
+
+q1 <- one_die %>% 
+  filter(X1 < 5) %>% 
+  summarise(prob = n() / nrow(one_die))
+
+q1
+```
+
+
+# Question 2.
+How many outcomes are there in the sample space of an experiment in which we toss three dice?
+```{r}
+6 * 6 * 6
+```
+
+
+#Question 3.
+In an experiment where we roll four dice:
+
+- how many outcomes are in the event where the total of the four dice equals 5, 6 or 7)?
+- what is the probability of this event?
+- what assumptions do we apply in answering part ii?
+
+```{r}
+s <- rolldie(4)
+
+s_5_to_7 <- s %>% 
+  mutate(total = X1 + X2 + X3 + X4) %>% 
+  filter(total %in% c(5, 6, 7)) %>% 
+  summarise(prob = n() / nrow(s))
+
+s_5_to_7
+```
+
+
+# Question 4.
+Five chairs are placed in a row in a room, along with five people of differing height. The people sit down randomly on the chairs. What is the probability that they sit in order of decreasing height, left to right?
+
+```{r}
+people <- c("Tallest", "Second Tallest", "Middle", "Second Shortest", "Shortest")
+
+seating <- as_tibble(permutations(n = 5, r = 5, v = people, repeats.allowed = FALSE))
+
+seating <- seating %>% 
+  rename(seat_1 = V1, seat_2 = V2, seat_3 = V3, seat_4 = V4, seat_5 = V5)
+
+height_order <- seating %>% 
+  filter(seat_1 == "Tallest", seat_2 == "Second Tallest", seat_3 == "Middle", seat_4 == "Second Shortest", seat_5 == "Shortest") %>% 
+  summarise(prob = n()/ nrow(seating))
+
+height_order
+```
 
