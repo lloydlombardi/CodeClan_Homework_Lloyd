@@ -73,7 +73,8 @@ mobiles %>%
   stat_function(
     fun = ~dnorm(.,
                  mean = samsung_stats$mean_rating,
-                 sd = samsung_stats$sd_rating)
+                 sd = samsung_stats$sd_rating),
+    col = "red"
   )
 ```
 
