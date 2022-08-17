@@ -144,3 +144,9 @@ height_order <- seating %>%
 height_order
 ```
 
+```{r}
+
+
+permutations(n = 6, r = 6,repeats.allowed = FALSE)
+```
+
