@@ -1,0 +1,353 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+```{r}
+library(tidyverse)
+library(infer)
+```
+
+```{r}
+data("msleep")
+
+glimpse(msleep)
+```
+
+
+```{r}
+msleep %>% 
+  filter(is.na(sleep_total))
+```
+
+
+# Question 2.
+Jabberwockies sleep for around 7 hours a night, on average. 
+Perform an appropriate statistical test to determine whether the `mean` _sleep_total_ in the sampled population of animal types differs from the typical value for jabberwockies.
+
+Significance Level:
+alpha = 0.05
+
+Hypotheses:
+Null hypothesis:
+$$
+H_0: µ_{sleep\_\ total} = 7
+$$
+The null hypothesis predicts that the mean sleep total in the sampled population of animal types is the same as the average sleep for jabberwockies of 7 hours.
+
+Alternative hypothesis:
+$$
+H_1: µ_{sleep\_\ total} \neq\  7
+$$
+The alternative hypothesis states that the mean sleep total in the sampled population of animal types is different to the average sleep for jabberwockies of 7 hours.
+
+
+> Step 1 - Plot distribution
+
+```{r}
+msleep %>% 
+  ggplot(aes(x = sleep_total)) +
+  geom_histogram(col = "white",
+                 bins = 15)
+```
+
+
+> Step 2 - Calculate observed statistic
+
+```{r}
+all_animal_observed_statistic <- msleep %>% 
+  specify(response = sleep_total) %>% 
+  calculate(stat = "mean")
+
+all_animal_observed_statistic
+```
+
+
+> Step 3 - Generate Null distribution
+
+```{r}
+all_animal_null_distribution <- msleep %>% 
+  specify(response = sleep_total) %>% 
+  hypothesise(null = "point", mu = 7) %>% 
+  generate(reps = 10000, type = "bootstrap") %>% 
+  calculate(stat = "mean")
+```
+
+
+> Step 4 - Visualise the result
+
+```{r}
+all_animal_null_distribution %>% 
+  visualise(bins = 15) +
+  shade_p_value(obs_stat = all_animal_observed_statistic, direction = "both")
+```
+
+
+> Step 5 - Extract the p-value
+
+```{r}
+all_animal_p_value <- all_animal_null_distribution %>% 
+  get_p_value(obs_stat = all_animal_observed_statistic, direction = "both")
+
+all_animal_p_value
+```
+
+As the p_value is approaching 0, ie p_value < 0.000001, the H_0 hypothesis can be rejected and it can be stated that there is a _significant statistical_ difference
+between the mean sleep total of animals, when compared to the average sleep of the jabberwockies.
+
+
+# Question 3.
+Perform an appropriate statistical test to determine whether _omnivores_ sleep for _significantly longer_ than _herbivores_, on average.
+
+Significance Level:
+alpha = 0.05
+
+Hypotheses:
+Null hypothesis:
+$$
+H_0: µ_{sleep\_\ omnivores} - µ_{sleep\_\ herbivores} = 0
+$$
+The null hypothesis states that there is no difference between the avergae sleep of ominvores, when compared to herbivores.
+
+Alternative hypothesis:
+$$
+H_1: µ_{sleep\_\ omnivores} - µ_{sleep\_\ herbivores} > 0
+$$
+The alternative hypothesis states that the mean sleep of omnivores is significantly longer than that of herbivores.
+
+```{r}
+omni_herbi <- msleep %>% 
+  filter(vore %in% c("omni", "herbi"))
+```
+
+
+> Step 1 - Plot the distribution
+
+```{r}
+omni_herbi %>% 
+  ggplot(aes(x = sleep_total,
+             y = vore)) +
+  geom_boxplot() +
+  geom_jitter(width = 0.2,
+              colour = 2)
+```
+
+
+> Step 2 - Calculate observed statistic
+
+```{r}
+omnivore_observed_stat <- omni_herbi %>% 
+  specify(sleep_total ~ vore) %>% 
+  calculate(stat = "diff in means", order = c("omni", "herbi"))
+
+omnivore_observed_stat
+```
+
+
+> Step 3 - Generate Null distribution
+
+```{r}
+omni_null_distribution <- omni_herbi %>% 
+  specify(sleep_total ~ vore) %>% 
+  hypothesise(null = "independence") %>% 
+  generate(reps = 10000, type = "permute") %>% 
+  calculate(stat = "diff in means", order = c("omni", "herbi"))
+```
+
+
+> Step 4 - Visualise plot
+
+```{r}
+omni_null_distribution %>% 
+  visualise() +
+  shade_p_value(obs_stat = omnivore_observed_stat, direction = "right")
+```
+
+
+> Step 5 - Extract p-value
+
+```{r}
+omni_null_distribution %>% 
+  get_p_value(obs_stat = omnivore_observed_stat, direction = "right")
+```
+The p_value returned 0.119, which is greater than the alpha. Therefore, H_0 cannot be rejected and there is not enough evidence to state that there is a significant statistical difference between the avergae sleep of omnivores and herbivores.
+
+
+
+# Question 4. 
+Perform an appropriate statistical test to determine whether the proportion of domesticated animal types in the population of animal types is greater than 5%.
+
+Significance Level:
+alpha = 0.05
+
+Hypotheses:
+Null hypothesis:
+$$
+H_0: π_{animals\_\ domesticated}  = 0.05
+$$
+The null hypothesis states that the proportion of animals in the population is 5%, based on the proportion of the sample.
+
+Alternative hypothesis:
+$$
+H_1: π_{animals\_\ domesticated}  > \ 0.05
+$$
+The alternative hypothesis states that the proprtion of animals in the population is greater than 5%, based on the proportions of the sample.
+
+```{r}
+domesticated <- msleep %>% 
+  mutate(is_domesticated = conservation == "domesticated") %>% 
+  mutate(is_domesticated = replace_na(is_domesticated, FALSE))
+```
+
+
+> Step 1 - Calculate observed statistic
+
+```{r}
+domestic_observed_stat <- domesticated %>% 
+  specify(response = is_domesticated, success = "TRUE") %>% 
+  calculate(stat = "prop")
+```
+
+
+> Step 3 - Generate Null distribution
+
+```{r}
+domestic_null_distribution <- domesticated %>% 
+  specify(response = is_domesticated, success = "TRUE") %>% 
+  hypothesise(null = "point", p = 0.05) %>% 
+  generate(reps = 10000, type = "draw") %>% 
+  calculate(stat = "prop")
+```
+
+
+> Step 4 - Visualise the results
+
+```{r}
+domestic_null_distribution %>% 
+  visualise(bins = 12) +
+  shade_p_value(obs_stat = domestic_observed_stat, direction = "right")
+```
+
+
+> Step 5 - Extract the p-value
+
+```{r}
+domestic_null_distribution %>% 
+  get_p_value(obs_stat = domestic_observed_stat, direction = "right")
+```
+The p_value of 0.0092 is less than the alpha of 0.05, inferring that there is a significant statsical difference from the hypothesis that 5% of animals are domesticated. H_0 can therefore be rejected.
+
+
+
+# Question 1.
+You work for a independent coffee shop. The boss tells you that she thinks that around 40% of people in the town (population 30,000) know of the coffee shop, but you are skeptical of the estimate. You conduct a random survey of 200 people in the town, asking if respondents are aware of your coffee shop. You want to use the sample to test the hypothesis that 40% or more of the town’s population have heard of the coffee shop.
+
+> Test:
+
+Here a One-Sample Proportion Test would be used to find if 40% of the population had heard of the coffee shop.
+
+> Hypotheses:
+
+Null hypothesis:
+$$
+H_0: π_{awarenesss}  = 0.40
+$$
+The null hypothesis states that the proportion of of people in the population that have heard of the coffee shop is equal to 40%, based on the proportions of the sample.
+
+Alternative hypothesis:
+$$
+H_1: π_{awarenesss}  < 0.40
+$$
+The alternative hypothesis states that the proprtion of people in the population that have heard of the coffee shop is less than 40%, based on the proportions of the sample.
+
+> Method:
+
+type = "draw"
+
+
+
+# Question 2.
+You work for a website design company and have performed an A/B test on the position of a banner on a website promoting a particular item.
+
+> Test:
+
+A Two-Sample Independence Test would be used to test for proportions
+
+
+> Hypotheses:
+
+Null hypothesis:
+$$
+H_0: π_{Group\ \_\ B} -\  π_{Group\ \_\ A}  = 0
+$$
+The null hypothesis states that the difference in proportions of people who clicked the banner in Group B was the same as Group A
+
+Alternative hypothesis:
+$$
+H_1: π_{Group\ \_\ B} -\  π_{Group\ \_\ A}  >\  0
+$$
+The alternative hypothesis states that the difference in proportions of people who clicked the banner in Group B is larger than in Group A
+
+> Method:
+
+type = "permute"
+
+
+# Question 3.
+You work as an analyst for a car manufacturing company - they have specific standards they must meet for standards and regulation purposes. You have been asked to check the quality control of the manufacture of a particular car part. You have been given data on a sample of 200 parts produced over the period of a week (the sampled parts were pulled at random from the production line and measured: the factory produced a lot more than 200 parts that week). The specification of the part stipulates a width of 145mm, and the manufacturing process is said to have ‘drifted’ if the mean width of parts differs significantly from 145mm. You want to use the sampled measurements to test whether the process overall has drifted.
+
+> Test:
+
+A One-Sample Mean Test would be conducted
+
+
+> Hypotheses:
+
+Null hypothesis:
+$$
+H_0: µ_{mean\ \_\ width}  = 145
+$$
+The null hypothesis states that the mean width of the parts is equal to 145
+
+Alternative hypothesis:
+$$
+H_0: µ_{mean\ \_\ width}  \neq\  145
+$$
+The alternative hypothesis states that the mean width of the parts is not equal, and different to, 145
+
+
+> Method:
+
+type = "bootstrap"
+
+
+
+#Question 1.
+Coffee shop problem. Significance level: 0.05, calculated p-value: 0.07
+
+> Interpretation
+
+As the p-vaue calculated is 0.07, this is greater than the alpha value of 0.05. Therefore H_0 cannot be rejected and there is not enough evidence to suggest that 40% or more of the population know about the coffee shop.
+
+
+# Question 2.
+Website company problem. Significance level: 0.01, p-value: 0.006
+
+> Interpretation
+
+As the p-value of 0.006 is less than the alhpa value of 0.01, H_0 can be rejected in favour of H_1. There is enough evidence to suggest that the placement of the banner has a significant statistical impact on the proportion of clicks.
+
+
+# Question 3.
+Manufacturing company problem. Significance level: 0.05, p-value: 0.55
+
+> Interpretation 
+
+The p-value of 0.55 is far greater than the significance level of 0.05, meaning that H_0 cannot be rejected and that there is not enough evidence to suggest that the mean width of the car parts is 145mm. 
+
+
+
+
+
+
