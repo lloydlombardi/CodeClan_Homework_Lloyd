@@ -1,0 +1,319 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+library(janitor)
+library(tsibble)
+library(brew)
+library(lubridate)
+library(feasts)
+library(sf)
+library(leaflet)
+library(slider)
+```
+
+
+```{r}
+nyc_bikes <- tsibbledata::nyc_bikes %>% clean_names()
+```
+
+
+```{r}
+glimpse(nyc_bikes)
+```
+
+
+```{r}
+nyc_bikes %>% 
+  filter(is.na(bike_id:gender))
+```
+
+
+```{r}
+nyc_bikes %>% 
+  distinct(type)
+
+nyc_bikes %>% 
+  distinct(start_station)
+
+nyc_bikes %>% 
+  distinct(gender)
+```
+
+
+```{r}
+nyc_bikes %>% 
+  group_by(gender) %>% 
+  summarise(count = n())
+```
+
+```{r}
+nyc_bikes %>% 
+  group_by(type, gender) %>% 
+  summarise(count = n())
+```
+
+
+```{r}
+nyc_bikes %>% 
+  group_by(type, gender, birth_year) %>% 
+  summarise(count = n()) %>% 
+  arrange(desc(count))
+```
+
+
+```{r}
+nyc_bikes <- nyc_bikes %>% 
+  mutate(month_of_ride = month(start_time, label = TRUE, abbr = FALSE),
+         day_of_week_ride = wday(start_time, label = TRUE, abbr = TRUE),
+         year_of_ride = year(start_time),
+         date = as_date(start_time),
+         ride_duration = as.numeric(as.period(stop_time - start_time), "minutes"),
+         season = case_when(
+           str_detect(month_of_ride, "December") ~ "Winter",
+           str_detect(month_of_ride, "January") ~ "Winter",
+           str_detect(month_of_ride, "February") ~ "Winter",
+           str_detect(month_of_ride, "March") ~ "Spring",
+           str_detect(month_of_ride, "April") ~ "Spring",
+           str_detect(month_of_ride, "May") ~ "Spring",
+           str_detect(month_of_ride, "June") ~ "Summer",
+           str_detect(month_of_ride, "July") ~ "Summer",
+           str_detect(month_of_ride, "August") ~ "Summer",
+           str_detect(month_of_ride, "September") ~ "Autumn",
+           str_detect(month_of_ride, "October") ~ "Autumn",
+           str_detect(month_of_ride, "November") ~ "Autumn",
+         ),
+         season = factor(season, order = TRUE),
+         .after = stop_time)
+```
+
+
+```{r}
+nyc_bikes %>% 
+  mutate(type = factor(type, order = TRUE)) %>% 
+  index_by(type) %>% 
+  summarise(count = n())
+```
+
+
+```{r}
+monthly_hires <- nyc_bikes %>% 
+  index_by(month_of_ride) %>% 
+  summarise(count = n())
+
+monthly_hires %>% 
+  ggplot(aes(x = month_of_ride,
+             y = count)) +
+  geom_point() +
+  geom_line(group = 1)
+```
+
+
+```{r}
+nyc_bikes %>%
+  filter(ride_duration <= 100) %>% 
+  index_by(month_of_ride) %>%
+  summarise(mean_monthly_ride_time = mean(ride_duration)) %>% 
+  ggplot(aes(x = month_of_ride,
+             y = mean_monthly_ride_time)) +
+  geom_point() +
+  geom_line(group = 1)
+```
+
+
+```{r}
+nyc_bikes %>%
+  filter(ride_duration <= 100) %>% 
+  index_by(month_of_ride) %>%
+  summarise(sum_monthly_ride_time = sum(ride_duration)) %>% 
+  ggplot(aes(x = month_of_ride,
+             y = sum_monthly_ride_time)) +
+  geom_point() +
+  geom_line(group = 1)
+```
+
+
+```{r}
+season_hires <- nyc_bikes %>% 
+  index_by(season) %>% 
+  summarise(count = n())
+
+season_hires %>% 
+  ggplot(aes(x = season,
+             y = count)) +
+  geom_col(aes(fill = season)) +
+  scale_fill_brewer(palette = "RdBu")
+```
+
+
+```{r}
+nyc_bikes %>% 
+  filter(ride_duration < 600) %>% 
+  index_by(season) %>% 
+  summarise(mean_seasonal_ride_time = mean(ride_duration)) %>% 
+  ggplot(aes(x = season,
+             y = mean_seasonal_ride_time)) +
+  geom_col(aes(fill = season)) +
+  scale_fill_brewer(palette = "RdBu")
+```
+
+
+```{r}
+daily_hires <- nyc_bikes %>% 
+  index_by(date) %>% 
+  summarise(count = n())
+
+daily_hires %>% 
+  ggplot(aes(x = date,
+             y = count)) +
+  geom_line()
+```
+
+
+
+```{r}
+dow_hires <- nyc_bikes %>% 
+  index_by(day_of_week_ride) %>% 
+  summarise(count = n())
+
+dow_hires %>% 
+  ggplot(aes(x = day_of_week_ride,
+             y = count)) +
+  geom_point() +
+  geom_line(group = 1)
+```
+
+
+
+```{r}
+nyc_bikes %>%
+  filter(ride_duration < 150) %>% 
+  ggplot(aes(x = ride_duration)) +
+  geom_histogram(bins = 100, col = "white") +
+  scale_x_log10()
+```
+
+
+
+```{r}
+nyc_bikes %>%
+  filter(ride_duration < 150) %>% 
+  mutate(type = factor(type, order = TRUE)) %>% 
+  index_by(type) %>% 
+  mutate(mean_time = mean(ride_duration)) %>% 
+  ggplot(aes(x = type,
+             y = mean_time)) +
+  geom_line()
+```
+
+
+```{r}
+nyc_bikes %>%
+  filter(ride_duration <= 100) %>% 
+  index_by(month_of_ride) %>%
+  mutate(mean_monthly_ride_time = mean(ride_duration)) %>% 
+  ggplot(aes(x = month_of_ride,
+             y = mean_monthly_ride_time,
+             colour = type)) +
+  geom_point() +
+  geom_line()
+```
+
+
+```{r}
+nyc_bikes %>%
+  filter(ride_duration < 600) %>% 
+  index_by(month_of_ride) %>%
+  group_by(type) %>% 
+  mutate(mean_monthly_ride_time = mean(ride_duration)) %>% 
+  ggplot(aes(x = month_of_ride,
+             y = mean_monthly_ride_time)) +
+  geom_line(aes(group = type, colour = type))
+```
+
+
+```{r}
+nyc_bikes %>%
+  filter(ride_duration < 600) %>% 
+  index_by(month_of_ride) %>%
+  group_by(type) %>% 
+  mutate(sum_monthly_ride_time = sum(ride_duration)) %>% 
+  ggplot(aes(x = month_of_ride,
+             y = sum_monthly_ride_time)) +
+  geom_line(aes(group = type, colour = type))
+```
+
+
+```{r}
+nyc_bikes %>%
+  filter(ride_duration < 600) %>% 
+  index_by(month_of_ride) %>%
+  group_by(gender) %>% 
+  mutate(mean_monthly_ride_time = mean(ride_duration)) %>% 
+  ggplot(aes(x = month_of_ride,
+             y = mean_monthly_ride_time)) +
+  geom_line(aes(group = gender, colour = gender))
+```
+
+
+```{r}
+nyc_bikes %>%
+  filter(ride_duration < 600) %>% 
+  index_by(month_of_ride) %>%
+  group_by(gender) %>% 
+  mutate(sum_monthly_ride_time = sum(ride_duration)) %>% 
+  ggplot(aes(x = month_of_ride,
+             y = sum_monthly_ride_time)) +
+  geom_line(aes(group = gender, colour = gender))
+```
+
+
+
+```{r}
+nyc_bikes %>% 
+  filter(gender == "Unknown",
+         type == "Customer") 
+```
+
+
+
+
+```{r}
+leaflet(nyc_bikes) %>% 
+  addTiles() %>% 
+  addMarkers(
+    lng = ~start_long,
+    lat = ~start_lat,
+    popup = ~paste("Station:", start_station)
+  )
+```
+
+
+
+```{r}
+# library(infer)
+# 
+# observed_stat <- nyc_bikes %>% 
+#   specify(response = type, success = "Customer") %>% 
+#   calculate(stat = "prop")
+# 
+# null_distribution <- nyc_bikes %>% 
+#   specify(response = type, success = "Customer") %>% 
+#   hypothesise(null = "point", p = 0.075) %>% 
+#   generate(reps = 50000, type = "draw") %>% 
+#   calculate(stat = "prop")
+# 
+# null_distribution %>% 
+#   visualise()+
+#   shade_p_value(obs_stat = observed_stat, direction = "left")
+# 
+# null_distribution %>% 
+#   get_p_value(obs_stat = observed_stat, direction = "left")
+```
+
+
+
+
