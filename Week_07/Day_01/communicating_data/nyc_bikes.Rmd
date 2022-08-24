@@ -1,9 +1,49 @@
 ---
-title: "R Notebook"
+title: "NYC Bikes Report"
 output: html_notebook
 ---
+# Domain Knowledge 1.1 
 
-```{r}
+__NYC Citi Bikes__ is a bike share program which offers customers the opportunity to explore NYC and the surrounding areas by bike.
+With over 1,500 stations and over 25,000 bikes, there is a __lot__ of data that could be collected and analysed in order to understand the trends of the customers using the bikes.
+
+This report investigates and analyses the data of __10 NYC Citi Bikes__ that were used in the Jersey City area in 2018.
+
+The following terms will be used across the entirety of this report:
+
+- __Customer__: Someone who has purchased either a 24-hour or a 3-day pass
+- __Subscriber__: Someone who has an annual subscription
+- __KPI__: The Key Performance Indicator is to increase bike hires
+
+The following points were considered for the report:
+
+- What is the pattern of bike hires over time (e.g. within a year, month, week, or day)?
+- Do bike hire patterns differ between bike rider demographics (e.g. gender, type of trip, age)?
+
+# Business Requirements 1.2
+
+To answer the above questions regarding pattern of hire over time and changing demographics, the following steps were taken:
+
+1. Load in and study the data
+2. Wrangle the data by manipulating the time-series columns
+    - Create a Year column
+    - Create a Month column
+    - Create a Date column
+    - Create a Day of Week column
+    - Create a Season column
+    - Create a Ride Duration column
+3. Investigate the proportion of customer types (Customer v Subscriber)
+4. Visualise the pattern of hire change over time
+5. Visualise the pattern of bike rider demographics by customer type
+6. Visualise the pattern of bike rider demographics by gender
+7. Visualise the geographical spread of the start-points
+8. Interpret the visualisations and make recommendations
+
+# Business Processes and Data Flow 1.3
+
+
+
+```{r eval=FALSE}
 library(tidyverse)
 library(janitor)
 library(tsibble)
@@ -91,13 +131,6 @@ nyc_bikes <- nyc_bikes %>%
 ```
 
 
-```{r}
-nyc_bikes %>% 
-  mutate(type = factor(type, order = TRUE)) %>% 
-  index_by(type) %>% 
-  summarise(count = n())
-```
-
 
 ```{r}
 monthly_hires <- nyc_bikes %>% 
@@ -116,18 +149,6 @@ monthly_hires %>%
 nyc_bikes %>%
   filter(ride_duration <= 100) %>% 
   index_by(month_of_ride) %>%
-  summarise(mean_monthly_ride_time = mean(ride_duration)) %>% 
-  ggplot(aes(x = month_of_ride,
-             y = mean_monthly_ride_time)) +
-  geom_point() +
-  geom_line(group = 1)
-```
-
-
-```{r}
-nyc_bikes %>%
-  filter(ride_duration <= 100) %>% 
-  index_by(month_of_ride) %>%
   summarise(sum_monthly_ride_time = sum(ride_duration)) %>% 
   ggplot(aes(x = month_of_ride,
              y = sum_monthly_ride_time)) +
@@ -137,39 +158,69 @@ nyc_bikes %>%
 
 
 ```{r}
-season_hires <- nyc_bikes %>% 
-  index_by(season) %>% 
-  summarise(count = n())
-
-season_hires %>% 
-  ggplot(aes(x = season,
-             y = count)) +
-  geom_col(aes(fill = season)) +
-  scale_fill_brewer(palette = "RdBu")
+nyc_bikes %>%
+  filter(ride_duration <= 100) %>% 
+  index_by(month_of_ride) %>%
+  summarise(mean_monthly_ride_time = mean(ride_duration)) %>% 
+  ggplot(aes(x = month_of_ride,
+             y = mean_monthly_ride_time)) +
+  geom_point() +
+  geom_line(group = 1)
 ```
 
 
-```{r}
+```{r, echo=FALSE}
 nyc_bikes %>% 
-  filter(ride_duration < 600) %>% 
+  index_by(season) %>%
+  group_by(type) %>% 
+  summarise(count = n()) %>% 
+  ggplot(aes(x = season,
+             y = count)) +
+  geom_col(aes(fill = type),
+           alpha = 0.8, position = "dodge") +
+  scale_x_discrete(limits = c("Spring", "Summer", "Autumn", "Winter")) +
+  theme_light() +
+  labs(x = "\nSeason",
+       y = "Number of Bike Rides",
+       title = "Number of Bike Rides per Season\n")
+```
+
+
+```{r, echo=FALSE}
+nyc_bikes %>%
+  filter(ride_duration <= 100) %>% 
+  index_by(season) %>%
+  summarise(sum_season_ride_time = sum(ride_duration)) %>%
+  ggplot(aes(x = season,
+             y = sum_season_ride_time)) +
+   geom_col(aes(fill = season),
+            alpha = 0.8) +
+  scale_fill_manual(values = c("#CC6600", "#669933", "#DB230B", "#003A72")) +
+  scale_x_discrete(limits = c("Spring", "Summer", "Autumn", "Winter")) +
+  theme_light() +
+  theme(legend.position = "none") +
+  labs(x = "\nSeason",
+       y = "Total Ride Time (minutes)",
+       title = "Total Ride Time per Season\n")
+```
+
+
+```{r, echo=FALSE}
+nyc_bikes %>% 
+  filter(ride_duration <= 100) %>% 
   index_by(season) %>% 
   summarise(mean_seasonal_ride_time = mean(ride_duration)) %>% 
   ggplot(aes(x = season,
              y = mean_seasonal_ride_time)) +
-  geom_col(aes(fill = season)) +
-  scale_fill_brewer(palette = "RdBu")
-```
-
-
-```{r}
-daily_hires <- nyc_bikes %>% 
-  index_by(date) %>% 
-  summarise(count = n())
-
-daily_hires %>% 
-  ggplot(aes(x = date,
-             y = count)) +
-  geom_line()
+  geom_col(aes(fill = season),
+           alpha = 0.8) +
+  scale_fill_manual(values = c("#CC6600", "#669933", "#DB230B", "#003A72")) +
+  scale_x_discrete(limits = c("Spring", "Summer", "Autumn", "Winter")) +
+  theme_light() +
+  theme(legend.position = "none") +
+  labs(x = "\nSeason",
+       y = "Mean Ride Time (minutes)",
+       title = "Mean Ride Time per Season\n")
 ```
 
 
@@ -197,16 +248,22 @@ nyc_bikes %>%
 ```
 
 
-
 ```{r}
-nyc_bikes %>%
-  filter(ride_duration < 150) %>% 
+nyc_bikes %>% 
   mutate(type = factor(type, order = TRUE)) %>% 
   index_by(type) %>% 
-  mutate(mean_time = mean(ride_duration)) %>% 
+  summarise(count = n()) %>% 
   ggplot(aes(x = type,
-             y = mean_time)) +
-  geom_line()
+         y = count)) +
+  geom_col(aes(fill = type),
+           alpha = 0.8) +
+  scale_x_discrete(limits = c("Subscriber", "Customer")) +
+  scale_fill_manual(values = c("#003A72", "#DB230B")) +
+  theme_light() +
+  theme(legend.position = "none") +
+  labs(x = "\nCustomer Type",
+       y = "Number of Customers",
+       title = "Number of Customer Types\n")
 ```
 
 
@@ -214,54 +271,44 @@ nyc_bikes %>%
 nyc_bikes %>%
   filter(ride_duration <= 100) %>% 
   index_by(month_of_ride) %>%
-  mutate(mean_monthly_ride_time = mean(ride_duration)) %>% 
-  ggplot(aes(x = month_of_ride,
-             y = mean_monthly_ride_time,
-             colour = type)) +
-  geom_point() +
-  geom_line()
-```
-
-
-```{r}
-nyc_bikes %>%
-  filter(ride_duration < 600) %>% 
-  index_by(month_of_ride) %>%
   group_by(type) %>% 
   mutate(mean_monthly_ride_time = mean(ride_duration)) %>% 
   ggplot(aes(x = month_of_ride,
              y = mean_monthly_ride_time)) +
+  geom_point(size = 1) +
   geom_line(aes(group = type, colour = type))
 ```
 
 
 ```{r}
 nyc_bikes %>%
-  filter(ride_duration < 600) %>% 
+  filter(ride_duration <= 100) %>% 
   index_by(month_of_ride) %>%
   group_by(type) %>% 
   mutate(sum_monthly_ride_time = sum(ride_duration)) %>% 
   ggplot(aes(x = month_of_ride,
              y = sum_monthly_ride_time)) +
+  geom_point(size = 1) +
   geom_line(aes(group = type, colour = type))
 ```
 
 
 ```{r}
 nyc_bikes %>%
-  filter(ride_duration < 600) %>% 
+  filter(ride_duration <= 100) %>% 
   index_by(month_of_ride) %>%
   group_by(gender) %>% 
   mutate(mean_monthly_ride_time = mean(ride_duration)) %>% 
   ggplot(aes(x = month_of_ride,
              y = mean_monthly_ride_time)) +
+  geom_point(size = 1) +
   geom_line(aes(group = gender, colour = gender))
 ```
 
 
 ```{r}
 nyc_bikes %>%
-  filter(ride_duration < 600) %>% 
+  filter(ride_duration <= 100) %>% 
   index_by(month_of_ride) %>%
   group_by(gender) %>% 
   mutate(sum_monthly_ride_time = sum(ride_duration)) %>% 
@@ -274,8 +321,14 @@ nyc_bikes %>%
 
 ```{r}
 nyc_bikes %>% 
-  filter(gender == "Unknown",
-         type == "Customer") 
+  index_by(year_of_ride) %>% 
+  group_by(type, gender) %>% 
+  summarise(count = n()) %>% 
+  ggplot() +
+  geom_col(aes(x = type,
+               y = count,
+               fill = gender),
+           position = "dodge")
 ```
 
 
@@ -315,5 +368,40 @@ leaflet(nyc_bikes) %>%
 ```
 
 
+```{r}
+daily_hires <- nyc_bikes %>% 
+  index_by(date) %>% 
+  summarise(count = n())
+
+daily_hires %>% 
+  ggplot(aes(x = date,
+             y = count)) +
+  geom_line()
+```
+
+
+```{r}
+rolling <- nyc_bikes %>%
+  filter(ride_duration <= 100) %>% 
+  index_by(date) %>% 
+  mutate(
+    duration_moving_average = slide_dbl(
+      .x = ride_duration,
+      .f = ~ mean(.x),
+      .before = 1000,
+      .after = 1000,
+      complete = TRUE
+    )
+  )
+
+rolling %>% 
+  ggplot() +
+  geom_line(aes(x = date,
+                y = ride_duration),
+            colour = "grey") +
+  geom_line(aes(x = date,
+                y = duration_moving_average),
+            colour = "red")
+```
 
 
