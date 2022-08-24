@@ -139,9 +139,18 @@ monthly_hires <- nyc_bikes %>%
 
 monthly_hires %>% 
   ggplot(aes(x = month_of_ride,
-             y = count)) +
-  geom_point() +
-  geom_line(group = 1)
+             y = count,
+             label = count)) +
+  geom_point(colour = "#003A72", size = 2) +
+  geom_line(group = 1, colour = "#DB230B")+
+  geom_text(vjust = -1, hjust = 1) +
+  theme_light() +
+  theme(
+    text = element_text(size = 20)
+  ) +
+  labs(x = "\nMonth of Year",
+       y = "Number of Bike Rides",
+       title = "Number of Bike Rides per Month\n")
 ```
 
 
@@ -152,8 +161,15 @@ nyc_bikes %>%
   summarise(sum_monthly_ride_time = sum(ride_duration)) %>% 
   ggplot(aes(x = month_of_ride,
              y = sum_monthly_ride_time)) +
-  geom_point() +
-  geom_line(group = 1)
+  geom_point(colour = "#003A72", size = 2) +
+  geom_line(group = 1, colour = "#DB230B")+
+  theme_light() +
+  theme(
+    text = element_text(size = 20)
+  ) +
+  labs(x = "\nMonth of Year",
+       y = "Total Ride Duration (minutes)",
+       title = "Ride Duration per Month\n")
 ```
 
 
@@ -164,8 +180,15 @@ nyc_bikes %>%
   summarise(mean_monthly_ride_time = mean(ride_duration)) %>% 
   ggplot(aes(x = month_of_ride,
              y = mean_monthly_ride_time)) +
-  geom_point() +
-  geom_line(group = 1)
+  geom_point(colour = "#003A72", size = 2) +
+  geom_line(group = 1, colour = "#DB230B")+
+  theme_light() +
+  theme(
+    text = element_text(size = 20)
+  ) +
+  labs(x = "\nMonth of Year",
+       y = "Mean Ride Duration (minutes)",
+       title = "Mean Ride Duration per Month\n")
 ```
 
 
@@ -179,10 +202,12 @@ nyc_bikes %>%
   geom_col(aes(fill = type),
            alpha = 0.8, position = "dodge") +
   scale_x_discrete(limits = c("Spring", "Summer", "Autumn", "Winter")) +
+  scale_fill_manual(values = c("#003A72", "#DB230B")) +
   theme_light() +
   labs(x = "\nSeason",
        y = "Number of Bike Rides",
-       title = "Number of Bike Rides per Season\n")
+       title = "Number of Bike Rides per Season\n",
+       fill = "Customer Type")
 ```
 
 
@@ -190,37 +215,43 @@ nyc_bikes %>%
 nyc_bikes %>%
   filter(ride_duration <= 100) %>% 
   index_by(season) %>%
+  group_by(type) %>% 
   summarise(sum_season_ride_time = sum(ride_duration)) %>%
   ggplot(aes(x = season,
              y = sum_season_ride_time)) +
-   geom_col(aes(fill = season),
-            alpha = 0.8) +
-  scale_fill_manual(values = c("#CC6600", "#669933", "#DB230B", "#003A72")) +
+   geom_col(aes(fill = type),
+            alpha = 0.8, position = "dodge") +
   scale_x_discrete(limits = c("Spring", "Summer", "Autumn", "Winter")) +
+  scale_fill_manual(values = c("#003A72", "#DB230B")) +
   theme_light() +
-  theme(legend.position = "none") +
   labs(x = "\nSeason",
        y = "Total Ride Time (minutes)",
-       title = "Total Ride Time per Season\n")
+       title = "Total Ride Time per Season\n",
+       fill = "Customer Type")
 ```
 
 
 ```{r, echo=FALSE}
 nyc_bikes %>% 
   filter(ride_duration <= 100) %>% 
-  index_by(season) %>% 
+  index_by(season) %>%
+  group_by(type) %>% 
   summarise(mean_seasonal_ride_time = mean(ride_duration)) %>% 
   ggplot(aes(x = season,
              y = mean_seasonal_ride_time)) +
-  geom_col(aes(fill = season),
-           alpha = 0.8) +
-  scale_fill_manual(values = c("#CC6600", "#669933", "#DB230B", "#003A72")) +
+  geom_col(aes(fill = type),
+           alpha = 0.8,
+           position = "dodge") +
   scale_x_discrete(limits = c("Spring", "Summer", "Autumn", "Winter")) +
+  scale_fill_manual(values = c("#003A72", "#DB230B")) +
   theme_light() +
-  theme(legend.position = "none") +
+  theme(
+    text = element_text(size = 20)
+  ) +
   labs(x = "\nSeason",
        y = "Mean Ride Time (minutes)",
-       title = "Mean Ride Time per Season\n")
+       title = "Mean Ride Time per Season\n",
+       fill = "Customer Type")
 ```
 
 
@@ -257,9 +288,13 @@ nyc_bikes %>%
          y = count)) +
   geom_col(aes(fill = type),
            alpha = 0.8) +
-  scale_x_discrete(limits = c("Subscriber", "Customer")) +
+  scale_x_discrete(limits = c("Customer", "Subscriber")) +
   scale_fill_manual(values = c("#003A72", "#DB230B")) +
+  geom_text(aes(label = paste0(round(count / sum(count) * 100, digits = 1), "%")), vjust = -0.25)+
   theme_light() +
+  theme(
+    text = element_text(size = 20)
+  ) +
   theme(legend.position = "none") +
   labs(x = "\nCustomer Type",
        y = "Number of Customers",
@@ -276,7 +311,16 @@ nyc_bikes %>%
   ggplot(aes(x = month_of_ride,
              y = mean_monthly_ride_time)) +
   geom_point(size = 1) +
-  geom_line(aes(group = type, colour = type))
+  geom_line(aes(group = type, colour = type)) +
+  scale_color_manual(values = c("#003A72", "#DB230B")) +
+  theme_light() +
+  theme(
+    text = element_text(size = 20)
+  ) +
+  labs(x = "\nMonth of Year",
+       y = "Mean Ride Duration (minutes)",
+       title = "Mean Ride Duration per Month by Customer\n",
+       colour = "Customer Type")
 ```
 
 
@@ -289,7 +333,16 @@ nyc_bikes %>%
   ggplot(aes(x = month_of_ride,
              y = sum_monthly_ride_time)) +
   geom_point(size = 1) +
-  geom_line(aes(group = type, colour = type))
+  geom_line(aes(group = type, colour = type)) +
+  scale_color_manual(values = c("#003A72", "#DB230B")) +
+  theme_light() +
+  theme(
+    text = element_text(size = 20)
+  ) +
+  labs(x = "\nMonth of Year",
+       y = "Total Ride Duration (minutes)",
+       title = "Total Ride Duration per Month by Customer\n",
+       colour = "Customer Type")
 ```
 
 
@@ -320,7 +373,8 @@ nyc_bikes %>%
 
 
 ```{r}
-nyc_bikes %>% 
+nyc_bikes %>%
+  filter(type == "Customer") %>% 
   index_by(year_of_ride) %>% 
   group_by(type, gender) %>% 
   summarise(count = n()) %>% 
@@ -388,8 +442,8 @@ rolling <- nyc_bikes %>%
     duration_moving_average = slide_dbl(
       .x = ride_duration,
       .f = ~ mean(.x),
-      .before = 1000,
-      .after = 1000,
+      .before = 500,
+      .after = 500,
       complete = TRUE
     )
   )
@@ -403,5 +457,11 @@ rolling %>%
                 y = duration_moving_average),
             colour = "red")
 ```
+
+
+
+
+
+
 
 

@@ -9,6 +9,7 @@ library(CodeClanData)
 library(gghighlight)
 ```
 
+
 # 1. Load in the libraries you need, and look at the backpack data. Take note of variable names and dimensions.
 ```{r}
 backpack
