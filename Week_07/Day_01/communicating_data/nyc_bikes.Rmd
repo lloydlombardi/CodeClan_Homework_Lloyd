@@ -199,7 +199,7 @@ nyc_bikes
 ```
 
 
-After the relevant wrangling was done and the new variables were explored in more detail, it was found that there were 3 ride durations that were extreme outliers that would adversely affect the visualisations and the analysis. It is unclear if these trips were a mistake, or possibly as a result of a bike not being returned properly, or some other technical issue, but it was decided that these should be removed for the purpose of the report.
+After the relevant wrangling was done and the new variables were explored in more detail, it was found that there were 3 ride durations that were extreme outliers that would adversely affect the visualisations and the analysis. It is unclear if these trips were a mistake, or possibly as a result of a bike not being returned properly, or some other technical issue, but it was decided that these should be removed for the purpose of the report. A value of 120 minutes was decided as the limit to filter at. On reflection, this could have been extended further to return a more accurate analysis.
 
 ```{r}
 nyc_bikes %>% 
@@ -211,7 +211,7 @@ nyc_bikes %>%
 
 ```{r eval=FALSE}
 nyc_bikes <- nyc_bikes %>% 
-  filter(ride_duration <= 600)
+  filter(ride_duration <= 120)
 ```
 
 
@@ -267,7 +267,7 @@ monthly_hires %>%
        y = "Number of Bike Rides",
        title = "Number of Bike Rides per Month\n")
 ```
-This line graph shows the monthly pattern of bike hires for 2018. The total number of bike rides was plotted against the month of the year to return a line graph. 
+This line graph shows the __monthly pattern__ of bike hires for 2018. The total number of bike rides was plotted against the month of the year to return a line graph. 
 
 It can clearly be seen that there is a dramatic upwards trend in total bike hires from March through to August, peaking at 728 hires, before falling steeply during the final 4 months of the year. The pattern is important as this trend can be further analysed and explored to see what is driving this visualisation, and if any actionable recommendations could be provided to Citi Bike.
 
@@ -288,7 +288,7 @@ nyc_bikes %>%
        y = "Total Ride Duration (minutes)",
        title = "Ride Duration per Month\n")
 ```
-This line graph shows the total ride duration of the 10 bikes for the months in 2018. Again, ride duration is plotted against the calender months.
+This line graph shows the __total__ ride duration of the 10 bikes for the months in 2018. Again, ride duration is plotted against the calender months.
 
 The pattern which emerges from this line graph is very similar to the one above, and this should be expected. As the number of rides increases, logic would follow that the total ride duration would increase. This graph further illustrates the pattern of bike hire over time and that the middle months of the year are by far the busiest. 
 
@@ -310,6 +310,9 @@ nyc_bikes %>%
        y = "Mean Ride Duration (minutes)",
        title = "Mean Ride Duration per Month\n")
 ```
+This line graph shows the __mean__ ride duration of the 10 bikes for the months in 2018.
+
+The mean pattern is different to the total duration, and number of hires, which suggests that there is data which is driving this change and affecting the expected pattern. The difference between the months is far smaller than when the total ride duration was plotted which suggests that there is a customer behaviour that is affecting this. 
 
 ***
 > ##### Plot Type: Bar Chart
@@ -334,7 +337,9 @@ nyc_bikes %>%
        y = "Number of Customers",
        title = "Number of Customer Types\n")
 ```
+This bar chart shows the __proportion__ of customer types from this data set.
 
+The plot shows that a huge majority of the customers in this data set are __subscribers__. Because of this massive proportion, the patterns and behaviours of the subscribers need to be investigated further. 
 ***
 > ##### Plot Type: Bar Chart
 > ##### Purpose: Plot the number of bike rides for both customer types per season
@@ -357,7 +362,37 @@ nyc_bikes %>%
        title = "Number of Bike Rides per Season\n",
        fill = "Customer Type")
 ```
+This bar chart shows the __number of bike hires__ of customer types from this data set. Here, the pattern is shown over the 4 seasons. 
 
+The plot shows the big difference in the number of hires between __subscribers__ and __customers__. 
+
+***
+
+> ##### Plot Type: Line Graph
+> ##### Purpose: Plot the mean ride duration for each month for both customer types
+
+
+```{r echo=FALSE}
+nyc_bikes %>%
+  index_by(month_of_ride) %>%
+  group_by(type) %>% 
+  mutate(mean_monthly_ride_time = mean(ride_duration)) %>% 
+  ggplot(aes(x = month_of_ride,
+             y = mean_monthly_ride_time)) +
+  geom_point(size = 1) +
+  geom_line(aes(group = type, colour = type)) +
+  scale_color_manual(values = c("#003A72", "#DB230B")) +
+  theme_light() +
+  labs(x = "\nMonth of Year",
+       y = "Mean Ride Duration (minutes)",
+       title = "Mean Ride Duration per Month by Customer\n",
+       colour = "Customer Type")
+```
+This line graph shows the stark difference in behaviour pattern of the different customer types.
+
+The subscriber has a very steady mean ride duration throughout the months of the year, which is not in keeping with the seasonal pattern visualised above. It can be seen that the mean ride does not change a huge amount throughout the year and suggests that the subscribers are possibly using the bikes for commuting. This insight can be used to make recommendations. 
+
+The customer has a much larger and more varied mean throughout the year and tends to follow the seasonal pattern. The mean also mostly falls below 30 minutes per month which is the upper limited of the "unlimited" time offered by the package. These insights could again be used for recommendations.
 ***
 > ##### Plot Type: Bar Chart
 > ##### Purpose: Plot the total ride duration for both customer types per season
@@ -380,6 +415,9 @@ nyc_bikes %>%
        title = "Total Ride Time per Season\n",
        fill = "Customer Type")
 ```
+This bar chart shows the __total__ ride duration of customer types from this data set. Here, the pattern is shown over the 4 seasons. 
+
+This plot is very similar to the one above, and that further displays the close link between total hires and total ride duration. 
 
 ***
 > ##### Plot Type: Bar Chart
@@ -404,6 +442,9 @@ nyc_bikes %>%
        title = "Mean Ride Time per Season\n",
        fill = "Customer Type")
 ```
+This bar chart shows the __mean__ ride duration of customer types from this data set. Here, the pattern is shown over the 4 seasons. 
+
+The plot here shows the main difference in customer behaviours of the __subscribers__ and __customers__. It can clearly be seen that the customer rides, on average, for far longer than the subscriber. This is a valuable insight for Citi Bike as they can tailor their offers and advertising at these two groups of customers. 
 
 ***
 > ##### Plot Type: Line Graph
@@ -426,30 +467,9 @@ nyc_bikes %>%
        title = "Total Ride Duration per Month by Customer\n",
        colour = "Customer Type")
 ```
-
+This line graph further illustrates the point above about the difference in total ride duration between the types of customers. As the subscriber makes up over 90% of the data set, it would be expected that the total pattern was similar to the initial line graphs that were visualised.
 ***
-> ##### Plot Type: Line Graph
-> ##### Purpose: Plot the mean ride duration for each month for both customer types
 
-
-```{r echo=FALSE}
-nyc_bikes %>%
-  index_by(month_of_ride) %>%
-  group_by(type) %>% 
-  mutate(mean_monthly_ride_time = mean(ride_duration)) %>% 
-  ggplot(aes(x = month_of_ride,
-             y = mean_monthly_ride_time)) +
-  geom_point(size = 1) +
-  geom_line(aes(group = type, colour = type)) +
-  scale_color_manual(values = c("#003A72", "#DB230B")) +
-  theme_light() +
-  labs(x = "\nMonth of Year",
-       y = "Mean Ride Duration (minutes)",
-       title = "Mean Ride Duration per Month by Customer\n",
-       colour = "Customer Type")
-```
-
-***
 > ##### Plot Type: Geospatial using Leaflet
 > ##### Purpose: Plot the geographical spread of the start stations
 
@@ -464,7 +484,7 @@ leaflet(nyc_bikes) %>%
   )
 ```
 
-
+Finally, this interactive geospatial map was created using leaflet. Around half of the start stations are in the metropolitan area of Jersey City, further suggesting that many of the subscirbers are using the bikes for a short term for possibly commuting. This geographical spread can again be used to make changes and recommendations.
 
 
 
