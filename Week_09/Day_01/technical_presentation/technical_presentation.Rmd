@@ -134,7 +134,11 @@ nhs_borders %>%
              y = total_incidences_breast))+
   geom_point()+
   geom_line()+
-  geom_smooth()
+  geom_smooth()+
+  theme_minimal()+
+  labs(x = "\nYear",
+       y = "Incidence Rate",
+       title = "Incidence Rate of Breast Cancer for All Ages in NHS Borders\n")
 ```
 
 
@@ -149,7 +153,11 @@ nhs_borders %>%
              y = total_incidences_bowel))+
   geom_point()+
   geom_line()+
-  geom_smooth()
+  geom_smooth()+
+  theme_minimal()+
+  labs(x = "\nYear",
+       y = "Incidence Rate",
+       title = "Incidence Rate of Bowel Cancer for All Ages in NHS Borders\n")
 ```
 
 
@@ -164,7 +172,11 @@ nhs_borders %>%
              y = total_incidences_lung))+
   geom_point()+
   geom_line()+
-  geom_smooth()
+  geom_smooth()+
+  theme_minimal()+
+  labs(x = "\nYear",
+       y = "Incidence Rate",
+       title = "Incidence Rate of Lung Cancer for All Ages in NHS Borders\n")
 ```
 
 
@@ -179,7 +191,11 @@ nhs_borders %>%
              y = total_incidences_prostate))+
   geom_point()+
   geom_line()+
-  geom_smooth()
+  geom_smooth()+
+  theme_minimal()+
+  labs(x = "\nYear",
+       y = "Incidence Rate",
+       title = "Incidence Rate of Prostate for All Ages in NHS Borders\n")
 ```
 
 
@@ -237,7 +253,8 @@ nhs_borders %>%
 
 ```{r}
 nhs_borders %>% 
-  filter(sex == "All") %>% 
+  filter(sex == "All",
+         year >= 2015) %>% 
   group_by(cancer_common) %>% 
   summarise(total_indicies = sum(incidences_all_ages)) %>% 
   ggplot(aes(x = cancer_common,
@@ -246,14 +263,17 @@ nhs_borders %>%
   theme_minimal()+
   scale_fill_brewer(palette = "Dark2")+
   theme(legend.position = "none")+
+  geom_text(aes(label = paste0(round(total_indicies/sum(total_indicies)*100), "%"), vjust = -0.25))+
   labs(x = "\nType of Cancer",
        y = "Incidence Rate",
-       title = "Incidence Rate of Common Cancer Types for All Ages in NHS Borders\n")
+       title = "Incidence Rate of Common Cancer Types for All Ages in NHS Borders",
+       subtitle = "Years: 2015 - 2020\n")
 ```
 
 ```{r}
 nhs_select %>% 
-  filter(sex == "All") %>% 
+  filter(sex == "All",
+         year >= 2015) %>% 
   group_by(cancer_common) %>% 
   summarise(total_indicies = sum(incidences_all_ages)) %>% 
   ggplot(aes(x = cancer_common,
@@ -262,9 +282,11 @@ nhs_select %>%
   theme_minimal()+
   scale_fill_brewer(palette = "Dark2")+
   theme(legend.position = "none")+
+  geom_text(aes(label = paste0(round(total_indicies/sum(total_indicies)*100, digits = 1), "%"), vjust = -0.25))+
   labs(x = "\nType of Cancer",
        y = "Incidence Rate",
-       title = "Incidence Rate of Common Cancer Types for All Ages in NHS Scotland\n") 
+       title = "Incidence Rate of Common Cancer Types for All Ages in NHS Scotland",
+       subtitle = "Years: 2015 - 2020\n") 
 ```
 
 
