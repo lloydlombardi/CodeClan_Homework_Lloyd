@@ -2,52 +2,87 @@
 title: "Data Analyst Hospital & Health Care"
 output: html_notebook
 ---
-
-```{r}
+Read in the required libraries
+```{r, eval=FALSE}
 library(tidyverse)
 library(janitor)
-library(lubridate)
+library(brew)
 ```
 
-
-```{r}
+Read in data sets
+```{r, eval=FALSE}
 incidence <- read_csv("data/incidence_by_hb.csv") %>% clean_names()
 
 hb <- read_csv("data/hb_geography_code.csv") %>% clean_names()
 ```
 
-
-```{r}
+Join health-board name column to incidence data
+```{r, eval=FALSE}
 incidence <- incidence %>% 
   left_join(select(hb, hb_name, hb), by = c("hb" = "hb"), keep = FALSE)
 ```
 
-
-```{r}
-nhs_borders <- incidence %>% 
-  filter(hb_name == "NHS Borders")
+Re-code Male only cancer sex type to "All" 
+```{r, eval=FALSE}
+incidence_male <- incidence %>%
+  filter(cancer_site %in% c("Prostate", "Penis", "Testis")) %>% 
+  mutate(sex = recode(sex,
+                      "Male" = "All"))
 ```
 
 
-```{r}
-nhs_borders %>%
-  filter(cancer_site == "All cancer types",
-         sex == "All") %>% 
-  ggplot(aes(x = year,
-             y = incidences_all_ages))+
-  geom_point()+
-  geom_line(group = 1)+
-  geom_smooth()
-```
-```{r}
-nhs_borders %>% 
-  distinct(cancer_site) %>% 
-  arrange(cancer_site)
+```{r, eval=FALSE}
+incidence <- incidence %>% 
+  filter(cancer_site != "Prostate",
+         cancer_site != "Penis",
+         cancer_site != "Testis")
 ```
 
 
-```{r}
-nhs_borders_select <- nhs_borders %>% 
+
+```{r, eval=FALSE}
+incidence <- incidence %>% 
+  bind_rows(incidence_male)
+```
+
+
+```{r, eval=FALSE}
+incidence_female <- incidence %>%
+  filter(cancer_site %in% c("Carcinoma in situ of the cervix uteri", "Cervix uteri", "Corpus uteri", "Ovary", "Uterus", "Vagina", "Vulva")) %>% 
+  mutate(sex = recode(sex,
+                      "Female" = "All"))
+```
+
+
+```{r, eval=FALSE}
+incidence <- incidence %>% 
+  filter(cancer_site != "Carcinoma in situ of the cervix uteri",
+         cancer_site != "Cervix uteri",
+         cancer_site != "Corpus uteri",
+         cancer_site != "Ovary",
+         cancer_site != "Uterus",
+         cancer_site != "Vagina",
+         cancer_site != "Vulva")
+```
+
+
+
+```{r, eval=FALSE}
+incidence <- incidence %>% 
+  bind_rows(incidence_female)
+```
+
+
+> This report will focus on the 4 most common types of cancer, according to the NHS
+* #### Bowel Cancer
+* #### Breast Cancer
+* #### Lung Cancer
+* #### Prostate Cancer
+8 types of localised cancer sites were grouped together to fully encapsulate the four most common types of cancer
+
+```{r, eval=FALSE}
+# Insert a column and only return the Big Four cancer types
+nhs_select <- incidence %>% 
   filter(cancer_site %in% c("Breast", "Carcinoma in situ of the breast", "Colon", "Colorectal cancer", "Mesothelioma", "Prostate", "Rectum and rectosigmoid junction", "Trachea, bronchus and lung")) %>% 
   mutate(cancer_common = case_when(
     str_detect(cancer_site, "Breast") ~ "Breast",
@@ -62,8 +97,35 @@ nhs_borders_select <- nhs_borders %>%
 ```
 
 
+
+## Plot all cancer types for all sexes in NHS Borders
+```{r, echo=FALSE}
+incidence %>%
+  filter(hb_name == "NHS Borders",
+         cancer_site == "All cancer types",
+         sex == "All") %>% 
+  ggplot(aes(x = year,
+             y = incidences_all_ages))+
+  geom_point()+
+  geom_line(group = 1)+
+  geom_smooth()+
+  theme_minimal()+
+  labs(x = "\nYear",
+       y = "Incidence Rate",
+       title = "Incidence Rate of All Cancer Sites for All Ages in NHS Borders\n")
+```
+
+
+Filter for only NHS Borders
 ```{r}
-nhs_borders_select %>%
+nhs_borders <- nhs_select %>% 
+  filter(hb_name == "NHS Borders")
+```
+
+
+Plot Breast cancer incidences for All sex
+```{r}
+nhs_borders %>%
   filter(cancer_common == "Breast",
          sex == "All") %>%
   group_by(year) %>% 
@@ -76,8 +138,9 @@ nhs_borders_select %>%
 ```
 
 
+Plot Bowel cancer incidences for All sex
 ```{r}
-nhs_borders_select %>%
+nhs_borders %>%
   filter(cancer_common == "Bowel",
          sex == "All") %>%
   group_by(year) %>% 
@@ -90,8 +153,9 @@ nhs_borders_select %>%
 ```
 
 
+Plot Ling cancer incidences for All sex
 ```{r}
-nhs_borders_select %>%
+nhs_borders %>%
   filter(cancer_common == "Lung",
          sex == "All") %>%
   group_by(year) %>% 
@@ -104,10 +168,11 @@ nhs_borders_select %>%
 ```
 
 
+Plot Prostate cancer incidences for All sex
 ```{r}
-nhs_borders_select %>%
+nhs_borders %>%
   filter(cancer_common == "Prostate",
-         sex == "Male") %>%
+         sex == "All") %>%
   group_by(year) %>% 
   summarise(total_incidences_prostate = sum(incidences_all_ages)) %>% 
   ggplot(aes(x = year,
@@ -118,28 +183,9 @@ nhs_borders_select %>%
 ```
 
 
+Plot total incidences of four common cancers for all sex
 ```{r}
-nhs_borders_prostate_recode <- nhs_borders_select %>%
-  filter(cancer_common == "Prostate") %>% 
-  mutate(sex = recode(sex,
-                      "Male" = "All"))
-```
-
-
-```{r}
-nhs_borders_select <- nhs_borders_select %>% 
-  filter(cancer_common != "Prostate")
-```
-
-
-```{r}
-nhs_borders_select <- nhs_borders_select %>% 
-  bind_rows(nhs_borders_prostate_recode)
-```
-
-
-```{r}
-nhs_borders_select %>% 
+nhs_borders %>% 
   filter(sex == "All") %>% 
   group_by(year) %>% 
   summarise(total_incidies = sum(incidences_all_ages)) %>% 
@@ -151,8 +197,9 @@ nhs_borders_select %>%
 ```
 
 
+Plot total incidences for all sex in bar
 ```{r}
-nhs_borders_select %>% 
+nhs_borders %>% 
   filter(sex == "All") %>% 
   group_by(year) %>% 
   summarise(total_incidies = sum(incidences_all_ages)) %>% 
@@ -163,8 +210,9 @@ nhs_borders_select %>%
 ```
 
 
+Plot the Big Four cancer types for all sex
 ```{r}
-nhs_borders_select %>% 
+nhs_borders %>% 
   filter(sex == "All") %>% 
   group_by(year, cancer_common) %>% 
   summarise(total_indicies = sum(incidences_all_ages)) %>% 
@@ -175,8 +223,9 @@ nhs_borders_select %>%
 ```
 
 
+Same as above on a horizontal bar
 ```{r}
-nhs_borders_select %>% 
+nhs_borders %>% 
   filter(sex == "All") %>% 
   group_by(year, cancer_common) %>% 
   summarise(total_indicies = sum(incidences_all_ages)) %>% 
@@ -185,4 +234,129 @@ nhs_borders_select %>%
   geom_col(aes(fill = cancer_common), position = "stack")+
   coord_flip()
 ```
+
+```{r}
+nhs_borders %>% 
+  filter(sex == "All") %>% 
+  group_by(cancer_common) %>% 
+  summarise(total_indicies = sum(incidences_all_ages)) %>% 
+  ggplot(aes(x = cancer_common,
+             y = total_indicies))+
+  geom_col(aes(fill = cancer_common))+
+  theme_minimal()+
+  scale_fill_brewer(palette = "Dark2")+
+  theme(legend.position = "none")+
+  labs(x = "\nType of Cancer",
+       y = "Incidence Rate",
+       title = "Incidence Rate of Common Cancer Types for All Ages in NHS Borders\n")
+```
+
+```{r}
+nhs_select %>% 
+  filter(sex == "All") %>% 
+  group_by(cancer_common) %>% 
+  summarise(total_indicies = sum(incidences_all_ages)) %>% 
+  ggplot(aes(x = cancer_common,
+             y = total_indicies))+
+  geom_col(aes(fill = cancer_common))+
+  theme_minimal()+
+  scale_fill_brewer(palette = "Dark2")+
+  theme(legend.position = "none")+
+  labs(x = "\nType of Cancer",
+       y = "Incidence Rate",
+       title = "Incidence Rate of Common Cancer Types for All Ages in NHS Scotland\n") 
+```
+
+
+
+```{r}
+all_scotland <- read_csv("data/all_scotland.csv") %>% clean_names()
+```
+
+```{r}
+scotland_male <- all_scotland %>%
+  filter(cancer_site %in% c("Prostate", "Penis", "Testis")) %>% 
+  mutate(sex = recode(sex,
+                      "Male" = "All"))
+```
+
+
+```{r}
+all_scotland <- all_scotland %>% 
+  filter(cancer_site != "Prostate",
+         cancer_site != "Penis",
+         cancer_site != "Testis")
+```
+
+
+
+```{r}
+all_scotland <- all_scotland %>% 
+  bind_rows(scotland_male)
+```
+
+
+```{r}
+scotland_female <- all_scotland %>%
+  filter(cancer_site %in% c("Carcinoma in situ of the cervix uteri", "Cervix uteri", "Corpus uteri", "Ovary", "Uterus", "Vagina", "Vulva")) %>% 
+  mutate(sex = recode(sex,
+                      "Female" = "All"))
+```
+
+
+```{r}
+all_scotland <- all_scotland %>% 
+  filter(cancer_site != "Carcinoma in situ of the cervix uteri",
+         cancer_site != "Cervix uteri",
+         cancer_site != "Corpus uteri",
+         cancer_site != "Ovary",
+         cancer_site != "Uterus",
+         cancer_site != "Vagina",
+         cancer_site != "Vulva")
+```
+
+
+
+```{r}
+all_scotland <- all_scotland %>% 
+  bind_rows(scotland_female)
+```
+
+
+```{r}
+scotland_select <- all_scotland %>% 
+  filter(cancer_site %in% c("Breast", "Carcinoma in situ of the breast", "Colon", "Colorectal cancer", "Mesothelioma", "Prostate", "Rectum and rectosigmoid junction", "Trachea, bronchus and lung")) %>% 
+  mutate(cancer_common = case_when(
+    str_detect(cancer_site, "Breast") ~ "Breast",
+    str_detect(cancer_site, "Carcinoma in situ of the breast") ~ "Breast",
+    str_detect(cancer_site, "Colon") ~ "Bowel",
+    str_detect(cancer_site, "Colorectal cancer") ~ "Bowel",
+    str_detect(cancer_site, "Rectum and rectosigmoid junction") ~ "Bowel",
+    str_detect(cancer_site, "Prostate") ~ "Prostate",
+    str_detect(cancer_site, "Mesothelioma") ~ "Lung",
+    str_detect(cancer_site, "Trachea, bronchus and lung") ~ "Lung"
+  ), .after = cancer_site)
+```
+
+
+
+
+
+```{r}
+all_scotland %>%
+  filter(cancer_site == "All cancer types",
+         sex == "All") %>% 
+  ggplot(aes(x = year,
+             y = incidences_all_ages))+
+  geom_point()+
+  geom_line(group = 1)+
+  geom_smooth()+
+  theme_minimal()+
+  labs(x = "\nYear",
+       y = "Incidence Rate",
+       title = "Incidence Rate of All Cancer Sites for All Ages across NHS Scotland\n")
+```
+
+
+
 
