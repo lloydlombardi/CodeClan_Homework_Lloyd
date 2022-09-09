@@ -7,6 +7,7 @@ Read in the required libraries
 library(tidyverse)
 library(janitor)
 library(brew)
+library(scales)
 ```
 
 Read in data sets
@@ -31,6 +32,7 @@ incidence_male <- incidence %>%
 ```
 
 
+Filter out Male only cancers for join
 ```{r, eval=FALSE}
 incidence <- incidence %>% 
   filter(cancer_site != "Prostate",
@@ -39,13 +41,14 @@ incidence <- incidence %>%
 ```
 
 
-
+Bind rows
 ```{r, eval=FALSE}
 incidence <- incidence %>% 
   bind_rows(incidence_male)
 ```
 
 
+Re-code Female only cancer sex type to "All"
 ```{r, eval=FALSE}
 incidence_female <- incidence %>%
   filter(cancer_site %in% c("Carcinoma in situ of the cervix uteri", "Cervix uteri", "Corpus uteri", "Ovary", "Uterus", "Vagina", "Vulva")) %>% 
@@ -54,6 +57,7 @@ incidence_female <- incidence %>%
 ```
 
 
+Filter out Female only cancers for join
 ```{r, eval=FALSE}
 incidence <- incidence %>% 
   filter(cancer_site != "Carcinoma in situ of the cervix uteri",
@@ -66,10 +70,30 @@ incidence <- incidence %>%
 ```
 
 
-
+Bind rows
 ```{r, eval=FALSE}
 incidence <- incidence %>% 
   bind_rows(incidence_female)
+```
+
+
+Plot All cancer types in NHS Borders
+```{r}
+incidence %>% 
+  filter(sex == "All",
+         hb_name == "NHS Borders",
+         cancer_site != "All cancer types") %>% 
+  group_by(year) %>% 
+  summarise(n = sum(incidences_all_ages)) %>% 
+   ggplot(aes(x = year,
+             y = n))+
+  geom_point()+
+  geom_line(group = 1)+
+  geom_smooth()+
+  theme_minimal()+
+  labs(x = "\nYear",
+       y = "Incidence Rate",
+       title = "Incidence Rate of All Cancer Sites for All Ages in NHS Borders\n")
 ```
 
 
@@ -96,24 +120,6 @@ nhs_select <- incidence %>%
   ), .after = cancer_site)
 ```
 
-
-
-## Plot all cancer types for all sexes in NHS Borders
-```{r, echo=FALSE}
-incidence %>%
-  filter(hb_name == "NHS Borders",
-         cancer_site == "All cancer types",
-         sex == "All") %>% 
-  ggplot(aes(x = year,
-             y = incidences_all_ages))+
-  geom_point()+
-  geom_line(group = 1)+
-  geom_smooth()+
-  theme_minimal()+
-  labs(x = "\nYear",
-       y = "Incidence Rate",
-       title = "Incidence Rate of All Cancer Sites for All Ages in NHS Borders\n")
-```
 
 
 Filter for only NHS Borders
@@ -161,7 +167,7 @@ nhs_borders %>%
 ```
 
 
-Plot Ling cancer incidences for All sex
+Plot Lung cancer incidences for All sex
 ```{r}
 nhs_borders %>%
   filter(cancer_common == "Lung",
@@ -251,6 +257,8 @@ nhs_borders %>%
   coord_flip()
 ```
 
+
+Plot percentage of four common cancer types in NHS Borders
 ```{r}
 nhs_borders %>% 
   filter(sex == "All",
@@ -270,6 +278,8 @@ nhs_borders %>%
        subtitle = "Years: 2015 - 2020\n")
 ```
 
+
+Plot percentage of four common cancer types in All Scotland
 ```{r}
 nhs_select %>% 
   filter(sex == "All",
@@ -289,12 +299,13 @@ nhs_select %>%
        subtitle = "Years: 2015 - 2020\n") 
 ```
 
-
-
+Read in All Scotland data
 ```{r}
 all_scotland <- read_csv("data/all_scotland.csv") %>% clean_names()
 ```
 
+
+Re-code Male only cancers to All
 ```{r}
 scotland_male <- all_scotland %>%
   filter(cancer_site %in% c("Prostate", "Penis", "Testis")) %>% 
@@ -303,6 +314,7 @@ scotland_male <- all_scotland %>%
 ```
 
 
+Filter Male only cancers for join
 ```{r}
 all_scotland <- all_scotland %>% 
   filter(cancer_site != "Prostate",
@@ -311,13 +323,14 @@ all_scotland <- all_scotland %>%
 ```
 
 
-
+Bind rows
 ```{r}
 all_scotland <- all_scotland %>% 
   bind_rows(scotland_male)
 ```
 
 
+Re-code Female only cancers to All
 ```{r}
 scotland_female <- all_scotland %>%
   filter(cancer_site %in% c("Carcinoma in situ of the cervix uteri", "Cervix uteri", "Corpus uteri", "Ovary", "Uterus", "Vagina", "Vulva")) %>% 
@@ -326,6 +339,7 @@ scotland_female <- all_scotland %>%
 ```
 
 
+Filter Female only cancers for join
 ```{r}
 all_scotland <- all_scotland %>% 
   filter(cancer_site != "Carcinoma in situ of the cervix uteri",
@@ -338,13 +352,14 @@ all_scotland <- all_scotland %>%
 ```
 
 
-
+Bin rows
 ```{r}
 all_scotland <- all_scotland %>% 
   bind_rows(scotland_female)
 ```
 
 
+Select and filter for four common cancer types
 ```{r}
 scotland_select <- all_scotland %>% 
   filter(cancer_site %in% c("Breast", "Carcinoma in situ of the breast", "Colon", "Colorectal cancer", "Mesothelioma", "Prostate", "Rectum and rectosigmoid junction", "Trachea, bronchus and lung")) %>% 
@@ -361,18 +376,19 @@ scotland_select <- all_scotland %>%
 ```
 
 
-
-
-
+Plot all cancer over time
 ```{r}
 all_scotland %>%
-  filter(cancer_site == "All cancer types",
-         sex == "All") %>% 
+  filter(sex == "All",
+         cancer_site != "All cancer types") %>% 
+  group_by(year) %>% 
+  summarise(n = sum(incidences_all_ages)) %>% 
   ggplot(aes(x = year,
-             y = incidences_all_ages))+
+             y = n))+
   geom_point()+
   geom_line(group = 1)+
   geom_smooth()+
+  scale_y_continuous(labels = comma)+
   theme_minimal()+
   labs(x = "\nYear",
        y = "Incidence Rate",
