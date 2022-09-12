@@ -1,0 +1,74 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+```{r}
+library(tidyverse)
+library(modelr)
+library(broom)
+```
+
+Load the data into a dataframe project
+```{r}
+project_management <- read_csv("data/project_management.csv") %>% janitor::clean_names()
+```
+
+
+Plot the data, taking estimated_length as the independent variable and actual_length as the dependent variable.
+```{r}
+project_management %>% 
+  ggplot(aes(x = estimated_length,
+             y = actual_length))+
+  geom_point()
+```
+
+
+Calculate the correlation coefficient of estimated_length and actual_length and interpret the value you obtain.
+```{r}
+project_management %>% 
+  summarise(correlation = cor(estimated_length, actual_length))
+```
+This falls within the ranges of 0.80 - 0.99 which suggests a very strong correlation
+
+
+Perform a simple linear regression using actual_length as the dependent variable, and estimated_length as the independent variable. Save the model object to a variable.
+```{r}
+model <- lm(actual_length ~ estimated_length,
+            data = project_management)
+```
+
+
+Interpret the regression coefficient of estimated_length (i.e. slope, gradient) you obtain from the model. How do you interpret the r2 value reported by the model?
+```{r}
+glance_output <- model %>% 
+  glance() %>% 
+  janitor::clean_names()
+
+glance_output
+```
+The r^2 value of 0.65 means that the model is an OK fit and therefore, the actual days for a job can only be estimated to an OK degree of certainty
+
+
+Is the relationship statistically significant? Remember, to assess this you need to check the p-value of the regression coefficient (or slope/gradient). But you should first check the regression diagnostic plots to see if the p-value will be reliable (don’t worry about any outlier points you see in the diagnostic plots, we’ll return to them in the extension).
+```{r}
+library(ggfortify)
+
+autoplot(model)
+```
+From the diagnostic plots we can see:
+
+Residuals vs Fitted:
+The residuals tend to descrease as the fitted values increase, which shouuldn't be the case and suggests that any p-value could be misleading
+
+Scale-Location:
+Again, there seems to be a pattern to the smoothed line which is undesirable and agains suggests that the p-value cannot be accurate
+
+```{r}
+glance_output
+```
+The p-value is tending towards 0 which is suggesting that there is a statistically significant relationship between the actual days and estimated days of a job
+
+
+
