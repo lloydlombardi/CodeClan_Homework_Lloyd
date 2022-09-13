@@ -72,3 +72,10 @@ The p-value is tending towards 0 which is suggesting that there is a statistical
 
 
 
+```{r}
+plot(model) +
+  geom_text(aes(label = 1:nrow(project_management)))
+```
+
+
+
