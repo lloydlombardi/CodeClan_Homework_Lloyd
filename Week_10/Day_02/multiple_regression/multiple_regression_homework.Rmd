@@ -1,0 +1,106 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+```{r}
+library(tidyverse)
+library(GGally)
+library(janitor)
+library(mosaic)
+library(ggfortify)
+```
+
+
+Load the housing_prices.csv data set and undertake an initial exploration of the data. You will find details on the data set on the relevant Kaggle page
+```{r}
+houses <- read_csv("data/housing_prices.csv")
+```
+
+
+```{r}
+houses %>% 
+  summary()
+```
+
+
+We expect the total_rooms of houses to be strongly correlated with total_bedrooms. Use ggpairs() to investigate correlations between these two variables.
+```{r}
+houses %>% 
+  select(total_rooms, total_bedrooms) %>% 
+  ggpairs()
+```
+
+So, we do find significant correlations. Let’s drop total_bedrooms from the dataset, and use only total_rooms going forward.
+```{r}
+houses <- houses %>% 
+  select(-total_bedrooms)
+```
+We are interested in developing a regression model for the median_house_value of a house in terms of the possible predictor variables in the dataset.
+
+Use ggpairs() to investigate correlations between median_house_value and the predictors (this may take a while to run, don’t worry, make coffee or something).
+
+```{r}
+houses %>% 
+  ggpairs()
+```
+
+Perform further ggplot visualisations of any significant correlations you find.
+
+```{r}
+houses %>% 
+  ggplot(aes(x = median_income,
+             y = median_house_value))+
+  geom_point()+
+  geom_smooth(method = "lm", se = FALSE)
+```
+
+
+```{r}
+houses %>% 
+  ggplot(aes(x = ocean_proximity,
+             y = median_house_value))+
+  geom_boxplot()
+```
+
+
+Shortly we may try a regression model to fit the categorical predictor ocean_proximity. Investigate the level of ocean_proximity predictors. How many dummy variables do you expect to get from it?
+
+```{r}
+houses %>% 
+  distinct(ocean_proximity)
+```
+
+
+```{r}
+alias(lm(median_house_value ~ ., data = houses))
+```
+
+
+```{r}
+model_value_income <- lm(median_house_value ~ median_income,
+                         data = houses)
+
+autoplot(model_value_income)
+```
+
+
+```{r}
+summary(model_value_income)
+```
+
+
+```{r}
+model_value_income_ocean <- lm(median_house_value ~ median_income + ocean_proximity,
+                               data = houses)
+
+autoplot(model_value_income_ocean)
+```
+
+
+```{r}
+summary(model_value_income_ocean)
+```
+
+
