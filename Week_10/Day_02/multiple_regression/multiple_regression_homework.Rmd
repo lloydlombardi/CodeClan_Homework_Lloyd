@@ -10,6 +10,7 @@ library(GGally)
 library(janitor)
 library(mosaic)
 library(ggfortify)
+library(skimr)
 ```
 
 
@@ -25,12 +26,32 @@ houses %>%
 ```
 
 
+Look at some of the ratios that could be made from the raw data
+These could help with creating a model
+```{r}
+house_features <- houses %>% 
+  mutate(rooms_per_house = total_rooms / households,
+         bedrooms_per_house = total_bedrooms / households,
+         rooms_per_capita = total_rooms / population,
+         bedrooms_per_capita = total_bedrooms / population,
+         houses_per_capita = households / population,
+         prop_bedrooms = total_bedrooms / total_rooms)
+
+house_features %>% 
+  select(rooms_per_house:prop_bedrooms) %>% 
+  skim()
+```
+
+
+
+
 We expect the total_rooms of houses to be strongly correlated with total_bedrooms. Use ggpairs() to investigate correlations between these two variables.
 ```{r}
 houses %>% 
   select(total_rooms, total_bedrooms) %>% 
   ggpairs()
 ```
+
 
 So, we do find significant correlations. Let’s drop total_bedrooms from the dataset, and use only total_rooms going forward.
 ```{r}
@@ -45,6 +66,81 @@ Use ggpairs() to investigate correlations between median_house_value and the pre
 houses %>% 
   ggpairs()
 ```
+
+updated ggpairs
+
+```{r}
+house_features %>% 
+  select(-c(longitude, latitude, rooms_per_house:prop_bedrooms)) %>%
+  select(median_house_value, everything()) %>% # use this to put median_house_value first in plots
+  ggpairs(progress = FALSE)
+
+ggsave("ggpairs1.png",
+       width = 20,
+       height = 12)
+```
+
+ggpairs with new variables created above
+```{r}
+house_features <- house_features %>% 
+  drop_na()
+
+house_features %>% 
+  select(median_house_value, rooms_per_house:prop_bedrooms) %>%
+  select(median_house_value, everything()) %>% # use this to put median_house_value first in plots
+  ggpairs(progress = FALSE)
+
+ggsave("ggpairs2.png",
+       width = 20,
+       height = 12)
+```
+
+
+observations:
+
+* median income very promising, high correlation (> 0.5)
+* ocean proximity
+  + explore levels
+* houses per capita, prop bedrooms, rooms per house could all be useful
+
+Explore levels of ocean proximity
+
+```{r}
+house_features %>% 
+  count(ocean_proximity)
+```
+
+We could group these by 2 levels:
+
+* Inland
+* Near Water
+
+```{r}
+house_features <- house_features %>% 
+  mutate(house_proximity = if_else(ocean_proximity == "INLAND",
+                                   "Inland",
+                                   "Near Water"))
+
+house_features %>% 
+  count(house_proximity)
+```
+
+Make another ggpairs using this new information
+
+```{r}
+house_features %>% 
+  select(median_house_value, house_proximity, rooms_per_house:prop_bedrooms) %>% 
+  ggpairs(aes(fill = house_proximity),
+          alpha = 0.4,
+          progress = FALSE)
+
+ggsave("ggpairs3.png",
+       width = 20,
+       height = 12)
+```
+
+
+
 
 Perform further ggplot visualisations of any significant correlations you find.
 
@@ -72,6 +168,15 @@ houses %>%
   distinct(ocean_proximity)
 ```
 
+Use the `count()` function to see how many of each ocean_proximity there are
+
+```{r}
+houses %>% 
+  count(ocean_proximity)
+```
+
+We can see that there are only 5 areas that are an "ISLAND" proximity which means we don't need to pay these too much attention. From the boxplot we can see that "INLAND" has a different median by quite a lot, and they account for roughly 1/3 of the data.
+
 
 ```{r}
 alias(lm(median_house_value ~ ., data = houses))
@@ -85,10 +190,34 @@ model_value_income <- lm(median_house_value ~ median_income,
 autoplot(model_value_income)
 ```
 
+Residuals vs Fitted Plot:
+
+* When we predict a low price, we are under-predicting the price
+* When we predict a high price, we are over-predicting the price
+
+This is enough to **FAIL** the test
+
+Normal Q-Q Plot:
+
+* There is a positive skew on the residuals
+* There is a sharp rise of the line around +1 residuals
+
+This is enough to **FAIL** the test
+
+Scale-Location Plot:
+
+* There is an inverse wedge shape
+* We are more wrong for lower guesses
+* We are less wrong for higher guesses
+* This looks systematic and a pattern - NOT DESIRABLE
+
+This is enough to **FAIL** the test
+
 
 ```{r}
 summary(model_value_income)
 ```
+
 
 
 ```{r}
@@ -101,6 +230,24 @@ autoplot(model_value_income_ocean)
 
 ```{r}
 summary(model_value_income_ocean)
+```
+
+
+```{r}
+plotModel(model_value_income_ocean)
+```
+
+
+```{r}
+library(modelr)
+
+log_model <- lm(log(median_house_value) ~ median_income + ocean_proximity,
+                data = house_features)
+
+houses %>% 
+  add_residuals(log_model) %>% 
+  ggplot() +
+  geom_histogram(aes(x = log(median_house_value)))
 ```
 
 

@@ -70,6 +70,11 @@ glance_output
 ```
 The p-value is tending towards 0 which is suggesting that there is a statistically significant relationship between the actual days and estimated days of a job
 
+```{r}
+summary(model)
+```
+
+
 
 
 ```{r}
