@@ -1,0 +1,521 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+library(car)
+library(modelr)
+library(skimr)
+library(GGally)
+library(ggfortify)
+```
+
+
+# Question 1 
+
+### Tidy up the data ready for regression:
+
+
+```{r}
+house <- read_csv("data/kc_house_data.csv") %>% janitor::clean_names()
+```
+
+```{r}
+summary(house)
+```
+
+
+```{r}
+skim(house)
+```
+
+
+remove unwanted columns
+
+```{r}
+house <- house %>% 
+  select(-c(date, id, sqft_living15, sqft_lot15, zipcode))
+```
+
+
+change waterfront and yr_renovated into logical columns
+
+```{r}
+house <- house %>% 
+  mutate(waterfront = as.logical(waterfront),
+         yr_renovated = if_else(yr_renovated > 0, TRUE, FALSE))
+```
+
+
+convert view, condition and grade to ordinal type
+
+```{r}
+view_level <- house %>% 
+  distinct(view) %>%
+  arrange(view) %>% 
+  pull()
+
+condition_level <- house %>% 
+  distinct(condition) %>% 
+  arrange(condition) %>% 
+  pull()
+
+grade_level <- house %>% 
+  distinct(grade) %>% 
+  arrange(grade) %>% 
+  pull()
+
+house <- house %>% 
+  mutate(view = factor(view, levels = view_level, ordered = TRUE),
+         condition = factor(condition, levels = condition_level, ordered = TRUE),
+         grade = factor(grade, levels = grade_level, ordered = TRUE))
+```
+
+
+```{r}
+skim(house)
+```
+
+
+```{r}
+house %>% 
+  count(view)
+
+house %>% 
+  count(condition)
+
+house %>% 
+  count(grade)
+```
+
+
+# Question 2
+
+### Check for aliased variables using the alias() function (this takes in a formula object and a data set). 
+
+check for alias using `alias`
+
+```{r}
+alias(lm(price ~ .,
+         data = house))
+```
+
+remove aliased variable from the data and check again for aliases
+
+```{r}
+house <- house %>% 
+  select(- sqft_basement)
+
+alias(lm(price ~ .,
+         data = house))
+```
+
+
+# Question 3
+
+### Systematically build a regression model containing up to four main effects (remember, a main effect is just a single predictor with coefficient), testing the regression diagnostics as you go * splitting datasets into numeric and non-numeric columns might help ggpairs() run in manageable time, although you will need to add either a price or resid column to the non-numeric dataframe in order to see its correlations with the non-numeric predictors.
+
+select all numeric types 
+
+```{r}
+house_numeric <- house %>% 
+  select_if(is.numeric)
+```
+
+
+select all non-numeric types
+
+```{r}
+house_nonnumeric <- house %>% 
+  select_if(function(x) !is.numeric(x))
+```
+
+add in price column from house data
+
+```{r}
+house_nonnumeric$price <- house$price
+```
+
+
+add ln_price in all data sets
+
+```{r}
+house <- house %>% 
+  mutate(ln_price = log(price))
+
+house_numeric <- house_numeric %>% 
+  mutate(ln_price = log(price))
+
+house_nonnumeric <- house_nonnumeric %>% 
+  mutate(ln_price = log(price))
+```
+
+
+ggpair the numeric data
+
+```{r}
+house_numeric %>%
+  select(price, everything()) %>% 
+  ggpairs()
+```
+
+
+```{r}
+house_numeric %>% 
+  select(ln_price, everything()) %>% 
+  ggpairs()
+```
+
+investigate:
+
+* sqft living
+* sqft above
+* bathrooms
+* bedrooms
+
+
+```{r}
+house_nonnumeric %>%
+  select(price, everything()) %>% 
+  ggpairs()
+```
+
+
+```{r}
+house_nonnumeric %>% 
+  select(ln_price, everything()) %>% 
+  ggpairs()
+```
+
+investigate:
+
+* grade
+* waterfront
+* view
+* condition
+
+
+First model
+
+```{r}
+mod1a1 <- lm(ln_price ~ sqft_living,
+            data = house)
+
+summary(mod1a1)
+
+autoplot(mod1a1)
+```
+
+
+```{r}
+mod1a2 <- lm(price ~ sqft_living,
+            data = house)
+
+summary(mod1a2)
+
+autoplot(mod1a2)
+```
+
+
+```{r}
+mod1b1 <- lm(ln_price ~ grade,
+             data = house)
+
+summary(mod1b1)
+
+autoplot(mod1b1)
+```
+
+
+```{r}
+mod1b2 <- lm(price ~ grade,
+             data = house)
+
+summary(mod1b2)
+
+autoplot(mod1b2)
+```
+
+
+Choose **sqft_living** as first predictor
+
+Look at residuals
+
+```{r}
+house_resid_numeric_log <- house_numeric %>% 
+  add_residuals(mod1a1) %>% 
+  select(-c(ln_price, sqft_living))
+
+house_resid_numeric_log %>% 
+  select(resid, everything()) %>% 
+  ggpairs()
+```
+
+* lat
+
+```{r}
+house_resid_numeric <- house_numeric %>% 
+  add_residuals(mod1a2) %>% 
+  select(-c(price, sqft_living))
+
+house_resid_numeric %>% 
+  select(resid, everything()) %>% 
+  ggpairs()
+```
+
+* bedrooms
+
+
+```{r}
+house_resid <- house %>% 
+  add_residuals(mod1a1) %>% 
+  select(-c(ln_price, sqft_living))
+
+house_resid %>% 
+  select(resid, everything()) %>% 
+  ggpairs()
+```
+
+* waterfront
+* grade
+* condition
+
+
+Second predictor
+
+```{r}
+mod2a1 <- lm(ln_price ~ sqft_living + lat,
+             data = house)
+
+summary(mod2a1)
+
+autoplot(mod2a1)
+```
+
+
+```{r}
+mod2a2 <- lm(price ~ sqft_living + lat,
+             data = house)
+
+summary(mod2a2)
+
+autoplot(mod2a2)
+```
+
+
+```{r}
+mod2b1 <- lm(ln_price ~ sqft_living + waterfront,
+             data = house)
+
+summary(mod2b1)
+
+autoplot(mod2b1)
+```
+
+
+```{r}
+mod2b2 <- lm(price ~ sqft_living + waterfront,
+             data = house)
+
+summary(mod2b2)
+
+autoplot(mod2b2)
+```
+
+
+```{r}
+mod2c1 <- lm(ln_price ~ sqft_living + grade,
+             data = house)
+
+summary(mod2c1)
+
+autoplot(mod2c1)
+```
+
+
+```{r}
+anova(mod1a1, mod2c1)
+```
+
+
+```{r}
+mod2c2 <- lm(price ~ sqft_living + grade,
+             data = house)
+
+summary(mod2c2)
+
+autoplot(mod2c2)
+```
+
+```{r}
+anova(mod1a2, mod2c2)
+```
+
+
+```{r}
+mod2d1 <- lm(ln_price ~ sqft_living + condition,
+             data = house)
+
+summary(mod2d1)
+
+autoplot(mod2d1)
+```
+
+
+```{r}
+mod2d2 <- lm(price ~ sqft_living + grade,
+             data = house)
+
+summary(mod2d2)
+
+autoplot(mod2d2)
+```
+
+
+
+Choose lat as second predictor
+
+
+```{r}
+house_resid_numeric <- house_numeric %>% 
+  add_residuals(mod2a1) %>% 
+  select(-c(ln_price, sqft_living, lat))
+
+house_resid_numeric %>% 
+  select(resid, everything()) %>% 
+  ggpairs()
+```
+
+* yr_built
+
+```{r}
+house_resid <- house %>% 
+  add_residuals(mod2a1) %>% 
+  select(-c(ln_price, sqft_living, lat))
+
+house_resid %>% 
+  select(resid, everything()) %>% 
+  ggpairs()
+```
+
+* grade
+* waterfront
+* condition
+
+
+third predictor
+
+```{r}
+mod3a1 <- lm(ln_price ~ sqft_living + lat + yr_built,
+             data = house)
+
+autoplot(mod3a1)
+
+summary(mod3a1)
+```
+
+
+```{r}
+mod3b1 <- lm(ln_price ~ sqft_living + lat + grade,
+             data = house)
+
+autoplot(mod3b1)
+
+summary(mod3b1)
+```
+
+
+```{r}
+anova(mod2a1, mod3b1)
+```
+
+
+
+```{r}
+mod3c1 <- lm(ln_price ~ sqft_living + lat + waterfront,
+             data = house)
+
+autoplot(mod3c1)
+
+summary(mod3c1)
+```
+
+
+```{r}
+mod3d1 <- lm(ln_price ~ sqft_living + lat + condition,
+             data = house)
+
+autoplot(mod3d1)
+
+summary(mod3d1)
+```
+
+
+choose grade
+
+look at residuals
+
+```{r}
+house_resid <- house %>% 
+  add_residuals(mod3b1) %>% 
+  select(-c(ln_price, sqft_living, lat, grade))
+
+house_resid %>% 
+  select(resid, everything()) %>% 
+  ggpairs()
+```
+
+* yr_built
+* waterfront
+* condition
+* view
+
+
+```{r}
+mod4a1 <- lm(ln_price ~ sqft_living + lat + grade + yr_built,
+             data = house)
+
+autoplot(mod4a1)
+
+summary(mod4a1)
+```
+
+
+```{r}
+mod4b1 <- lm(ln_price ~ sqft_living + lat + grade + waterfront,
+             data = house)
+
+autoplot(mod4b1)
+
+summary(mod4b1)
+```
+
+
+```{r}
+mod4c1 <- lm(ln_price ~ sqft_living + lat + grade + condition,
+             data = house)
+
+autoplot(mod4c1)
+
+summary(mod4c1)
+```
+
+
+```{r}
+mod4d1 <- lm(ln_price ~ sqft_living + lat + grade + view,
+             data = house)
+
+autoplot(mod4d1)
+
+summary(mod4d1)
+```
+
+
+
+
+
+
+
+
