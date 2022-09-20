@@ -1,0 +1,255 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+Load in libraries
+```{r}
+library(tidyverse)
+library(janitor)
+library(modelr)
+library(readxl)
+library(GGally)
+library(pROC)
+```
+
+
+Read in data
+```{r}
+telco_churn <- read_excel("data/telecomms_churn.xlsx") %>% 
+  clean_names()
+```
+
+
+Pairs plot
+```{r}
+split1 <- telco_churn %>%
+  select(gender, senior_citizen, partner, churn) %>% 
+  select(churn, everything())
+
+split2 <- telco_churn %>%
+  select(dependents, tenure, phone_service, churn)%>% 
+  select(churn, everything())
+
+split3 <- telco_churn %>%
+  select(internet_service, contract, monthly_charges, total_charges, churn)%>% 
+  select(churn, everything())
+```
+
+
+```{r}
+split1 %>% 
+  ggpairs()
+
+split2 %>% 
+  ggpairs()
+
+split3 %>% 
+  ggpairs()
+```
+
+
+Feature Engineering
+```{r}
+telco_clean <- telco_churn %>%
+  filter(!is.na(total_charges)) %>% 
+  select(-customer_id) %>% 
+  mutate(across(where(is_character), as_factor)) %>%
+  mutate(senior_citizen = as_factor(if_else(senior_citizen == 1, "Yes", "No")))
+```
+
+Single Predictor Model - Senior Citizen
+```{r}
+model_senior_citizen <- glm(churn ~ senior_citizen,
+                            data = telco_clean,
+                            family = binomial(link = "logit"))
+
+summary(model_senior_citizen)
+```
+
+
+Single Predictor Model - Partner
+```{r}
+model_partner <- glm(churn ~ partner,
+                            data = telco_clean,
+                            family = binomial(link = "logit"))
+
+summary(model_partner)
+```
+
+
+Single Predictor Model - Tenure
+```{r}
+model_tenure <- glm(churn ~ tenure,
+                            data = telco_clean,
+                            family = binomial(link = "logit"))
+
+summary(model_tenure)
+```
+
+
+Single Predictor Model - Monthly Charges
+```{r}
+model_monthly_charges <- glm(churn ~ monthly_charges,
+                            data = telco_clean,
+                            family = binomial(link = "logit"))
+
+summary(model_monthly_charges)
+```
+
+
+Single Predictor Model - Total Charges
+```{r}
+model_total_charges <- glm(churn ~ total_charges,
+                            data = telco_clean,
+                            family = binomial(link = "logit"))
+
+summary(model_total_charges)
+```
+
+
+Add Predictors and Create ROC functions for each
+
+Senior Citizen
+```{r}
+senior_citizen_pred <- telco_clean %>% 
+  add_predictions(model_senior_citizen, type = "response")
+
+roc_senior_citizen <- senior_citizen_pred %>% 
+  roc(response = churn,
+      predictor = pred)
+```
+
+
+Partner
+```{r}
+partner_pred <- telco_clean %>% 
+  add_predictions(model_partner, type = "response")
+
+roc_partner <- partner_pred %>% 
+  roc(response = churn,
+      predictor = pred)
+```
+
+
+Tenure
+```{r}
+tenure_pred <- telco_clean %>% 
+  add_predictions(model_tenure, type = "response")
+
+roc_tenure <- tenure_pred %>% 
+  roc(response = churn,
+      predictor = pred)
+```
+
+
+Monthly Charges
+```{r}
+monthly_charges_pred <- telco_clean %>% 
+  add_predictions(model_monthly_charges, type = "response")
+
+roc_monthly_charges <- monthly_charges_pred %>% 
+  roc(response = churn,
+      predictor = pred)
+```
+
+
+Total Charges
+```{r}
+total_charges_pred <- telco_clean %>% 
+  add_predictions(model_total_charges, type = "response")
+
+roc_total_charges <- total_charges_pred %>% 
+  roc(response = churn,
+      predictor = pred)
+```
+
+
+Plot ggroc
+```{r}
+ggroc(data = list("senior citizen" = roc_senior_citizen, "partner" = roc_partner, "tenure" = roc_tenure, "monthly charges" = roc_monthly_charges, "total charges" = roc_total_charges),
+      legacy.axes = TRUE) +
+  labs(x = "False Positive Rate",
+       y = "True Positive Rate")
+```
+
+Find the AUCs for the predictors
+```{r}
+auc(roc_senior_citizen)
+
+auc(roc_senior_citizen)
+
+auc(roc_tenure)
+
+auc(roc_monthly_charges)
+
+auc(roc_total_charges)
+```
+
+Result:
+
+From the graph and relating AUC, it can be found that "tenure" is the best classifier
+
+
+```{r}
+telco_clean %>% 
+  distinct(tenure)
+```
+
+
+```{r}
+telco_visualise <- telco_clean %>%
+  mutate(churn = if_else(churn == "Yes", 1, 0))
+```
+
+
+```{r}
+min_tenure <- min(telco_clean$tenure)
+max_tenure <- max(telco_clean$tenure)
+
+log_predictions <- tibble(
+  tenure = seq(min_tenure, max_tenure, 1)
+) %>% 
+  add_predictions(model_tenure, type = "response")
+
+ggplot(telco_visualise) +
+  geom_jitter(aes(x = tenure,
+                  y = churn),
+              alpha = 0.5, height = 0.1, width = 0.1) +
+  geom_line(data = log_predictions, aes(x = tenure, y = pred), col = "red")
+```
+
+The customer is more likely to churn if they have a low tenure. As tenure increases, the rate of churn decreases
+
+
+```{r}
+telco_clean %>% 
+  distinct(total_charges)
+```
+
+
+```{r}
+min_total_charges <- min(telco_clean$total_charges)
+max_total_charges <- max(telco_clean$total_charges)
+
+log_predictions_charges <- tibble(
+  total_charges = seq(min_total_charges, max_total_charges, (max_total_charges - min_total_charges) / 6500)
+) %>% 
+  add_predictions(model_total_charges, type = "response")
+
+ggplot(telco_visualise) +
+  geom_jitter(aes(x = total_charges,
+                  y = churn),
+              alpha = 0.5, height = 0.1, width = 0.1) +
+  geom_line(data = log_predictions_charges, aes(x = total_charges, y = pred), col = "red")
+```
+
+
+
+
+
+
+
+
+
+
