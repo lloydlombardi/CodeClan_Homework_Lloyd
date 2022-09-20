@@ -1,0 +1,584 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+Call in libraries
+```{r}
+library(tidyverse)
+library(modelr)
+library(leaps)
+library(GGally)
+library(ggfortify)
+library(lubridate)
+```
+
+Read in data set
+```{r}
+avocado <- read_csv("data/avocado.csv") %>% janitor::clean_names()
+```
+
+Use `glimpse`
+```{r}
+glimpse(avocado)
+```
+
+Use `skim`
+```{r}
+library(skimr)
+
+skim(avocado)
+```
+
+Look at first six rows
+```{r}
+avocado %>% 
+  head()
+```
+
+
+Look at distribution of average prices
+```{r}
+avocado %>% 
+  ggplot(aes(x = average_price)) +
+  geom_histogram() 
+```
+
+Find if there are any aliases
+```{r}
+alias(average_price ~ .,
+      data = avocado)
+```
+
+
+Find all the distinct regions
+```{r}
+avocado %>% 
+  distinct(region) 
+```
+
+Feature Engineering
+
+* extract month from `date`
+* mutate a `total_single` column (total_volume = total_single + total_bags)
+* change `year` to a factor
+* re-code `region` into groups
+* change `type` to logical
+
+```{r}
+avocado <- avocado %>% 
+  mutate(month = month(date, label = TRUE, abbr = FALSE)) %>% 
+  mutate(total_single = x4046 + x4225 + x4770,
+         .after = total_volume) %>% 
+  mutate(year = as.factor(year)) %>% 
+  mutate(region = case_when(
+    str_detect(region, "Albany") ~ "Northeast",
+    str_detect(region, "Atlanta") ~ "Southeast",
+    str_detect(region, "BaltimoreWashington") ~ "Northeast",
+    str_detect(region, "Boise") ~ "West",
+    str_detect(region, "Boston") ~ "Northeast",
+    str_detect(region, "BuffaloRochester") ~ "Northeast",
+    str_detect(region, "California") ~ "California",
+    str_detect(region, "Charlotte") ~ "Midsouth",
+    str_detect(region, "Chicago") ~ "Great Lakes",
+    str_detect(region, "CincinnatiDayton") ~ "Great Lakes",
+    str_detect(region, "Columbus") ~ "Great Lakes",
+    str_detect(region, "DallasFtWorth") ~ "South Central",
+    str_detect(region, "Denver") ~ "West",
+    str_detect(region, "Detroit") ~ "Great Lakes",
+    str_detect(region, "GrandRapids") ~ "Great Lakes",
+    str_detect(region, "GreatLakes") ~ "Great Lakes",
+    str_detect(region, "HarrisburgScranton") ~ "Northeast",
+    str_detect(region, "Houston") ~ "South Central",
+    str_detect(region, "HartfordSpringfield") ~ "Northeast",
+    str_detect(region, "Indianapolis") ~ "Great Lakes",
+    str_detect(region, "Jacksonville") ~ "Southeast",
+    str_detect(region, "LasVegas") ~ "West",
+    str_detect(region, "LosAngeles") ~ "California",
+    str_detect(region, "Louisville") ~ "Midsouth",
+    str_detect(region, "MiamiFtLauderdale") ~ "Southeast",
+    str_detect(region, "Midsouth") ~ "Midsouth",
+    str_detect(region, "Nashville") ~ "Midsouth",
+    str_detect(region, "NewOrleansMobile") ~ "South Central",
+    str_detect(region, "NewYork") ~ "Northeast",
+    str_detect(region, "Northeast") ~ "Northeast",
+    str_detect(region, "NorthernNewEngland") ~ "Northeast",
+    str_detect(region, "Orlando") ~ "Southeast",
+    str_detect(region, "Philadelphia") ~ "Northeast",
+    str_detect(region, "PhoenixTucson") ~ "West",
+    str_detect(region, "Pittsburgh") ~ "Northeast",
+    str_detect(region, "Plains") ~ "Plains",
+    str_detect(region, "Portland") ~ "West",
+    str_detect(region, "RaleighGreensboro") ~ "Midsouth",
+    str_detect(region, "RichmondNorfolk") ~ "Midsouth",
+    str_detect(region, "Roanoke") ~ "Midsouth",
+    str_detect(region, "Sacramento") ~ "California",
+    str_detect(region, "SanDiego") ~ "California",
+    str_detect(region, "SanFrancisco") ~ "California",
+    str_detect(region, "Seattle") ~ "West",
+    str_detect(region, "SouthCarolina") ~ "Southeast",
+    str_detect(region, "SouthCentral") ~ "South Central",
+    str_detect(region, "Southeast") ~ "Southeast",
+    str_detect(region, "Spokane") ~ "West",
+    str_detect(region, "StLouis") ~ "Plains",
+    str_detect(region, "Syracuse") ~ "Northeast",
+    str_detect(region, "Tampa") ~ "Southeast",
+    str_detect(region, "TotalUS") ~ "TotalUS",
+    str_detect(region, "West") ~ "West",
+    str_detect(region, "WestTexNewMexico") ~ "South Central",
+    TRUE ~ region
+    )) %>% 
+  mutate(is_organic = type == "organic")
+```
+
+
+Feature Engineering cont
+
+* drop:
+  + id
+  + date
+  + total_volume
+  + x4046
+  + x4225
+  + x4770
+  + small_bags
+  + large_bags
+  + x_large_bags
+
+```{r}
+avocado <- avocado %>% 
+  select(average_price, total_single, total_bags, is_organic, year, region, month)
+```
+
+Further feature engineering:
+
+* create `ln_total_single`
+* create `ln_total_bags`
+* create `prop_single_bags`
+
+```{r}
+avocado <- avocado %>% 
+  mutate(ln_total_single = log(total_single),
+         ln_total_bags = log(total_bags + 1),
+         prop_single_bags = total_single / (total_single + total_bags))
+```
+
+
+Split the data into test/train data sets (90/10)
+
+```{r}
+n_row <- nrow(avocado)
+
+test_index <- sample(1:n_row, size = n_row * 0.1)
+
+avocado_test <- slice(avocado, test_index)
+avocado_train <- slice(avocado, -test_index)
+```
+
+
+Initial ggpairs
+```{r}
+avocado_train %>% 
+  select(average_price, everything()) %>% 
+  ggpairs()
+```
+Based on this, look at the following for the first predictor:
+
+* `ln_total_bag`
+* `is_organic`
+
+Plot `ln_total_bag` histogram
+```{r}
+avocado_train %>% 
+  ggplot(aes(x = ln_total_bags))+
+  geom_histogram()
+```
+
+
+Plot `is_organic` boxplot
+```{r}
+avocado_train %>% 
+  ggplot(aes(x = is_organic,
+             y = average_price))+
+  geom_boxplot()
+```
+
+Create first model
+
+```{r}
+mod1a <- lm(average_price ~ ln_total_bags,
+            data = avocado_train)
+
+autoplot(mod1a)
+```
+
+
+```{r}
+summary(mod1a)
+```
+
+Results:
+
+* RvF there seems to be a pattern
+* Scale-Location is 'more wrong' in the middle of the fitted values
+* Normal Q-Q lifts off the line towards the higher quantiles
+* Accounts for ~ 33% of the variation
+
+
+```{r}
+mod1b <- lm(average_price ~ is_organic,
+            data = avocado_train)
+
+autoplot(mod1b)
+```
+
+
+```{r}
+summary(mod1b)
+```
+
+
+Results:
+
+* RvF can't tell
+* Scale-Location can't tell
+* Normal Q-Q lifts off the line towards the higher quantiles
+* Accounts for ~ 37% of the variation
+* **Choose this for the first model**
+
+Look at and plot residuals:
+
+```{r}
+avocado_resid <- avocado_train %>% 
+  add_residuals(mod1b) %>% 
+  select(-c(average_price, is_organic))
+
+avocado_resid %>% 
+  select(resid, everything()) %>% 
+  ggpairs()
+```
+
+Based on this, look at the following for the second predictor:
+
+* `ln_total_bag`
+* `region`
+* `month`
+
+Plot `region` boxplot
+```{r}
+avocado_train %>% 
+  ggplot(aes(x = region,
+             y = average_price))+
+  geom_boxplot()
+```
+
+
+Plot the `month` boxplot
+```{r}
+avocado_train %>% 
+  ggplot(aes(x = month,
+             y = average_price))+
+  geom_boxplot()
+```
+
+
+```{r}
+mod2a <- lm(average_price ~ is_organic + ln_total_bags,
+            data = avocado_train)
+
+autoplot(mod2a)
+```
+
+
+```{r}
+summary(mod2a)
+```
+
+Results:
+
+* RvF there seems to be a pattern, there's a gap in the fitted values
+* Scale-Location is 'more wrong' the higher the fitted values, slight cone shape
+* Normal Q-Q lifts off the line towards the higher quantiles
+* Accounts for ~ 42% of the variation
+
+```{r}
+mod2b <- lm(average_price ~ is_organic + region,
+            data = avocado_train)
+
+autoplot(mod2b)
+```
+
+
+```{r}
+summary(mod2b)
+```
+
+Results:
+
+* RvF can't tell
+* Scale-Location can't tell
+* Normal Q-Q lifts off the line at the beginning and towards the higher quantiles
+* Accounts for ~ 47% of the variation
+* **Choose this result**
+
+```{r}
+mod2c <- lm(average_price ~ is_organic + month,
+            data = avocado_train)
+
+autoplot(mod2c)
+```
+
+
+```{r}
+summary(mod2c)
+```
+
+Results:
+
+* RvF can't tell
+* Scale-Location can't tell
+* Normal Q-Q lifts off the line towards the higher quantiles
+* Accounts for ~ 44% of the variation
+
+Plot the residuals
+
+```{r}
+avocado_resid <- avocado_train %>% 
+  add_residuals(mod2b) %>% 
+  select(-c(average_price, is_organic, region))
+
+avocado_resid %>% 
+  select(resid, everything()) %>% 
+  ggpairs()
+```
+
+Based on this, look at the following for the second predictor:
+
+* `prop_single_bags`
+* `month`
+
+
+```{r}
+mod3a <- lm(average_price ~ is_organic + region + prop_single_bags,
+            data = avocado_train)
+
+autoplot(mod3a)
+```
+
+
+```{r}
+summary(mod3a)
+```
+
+Results:
+
+* RvF still seem to be getting more errors for a higher fitted value
+* Scale-Location looks better but still 'more wrong' the higher the fitted values
+* Normal Q-Q lifts off the line towards the higher quantiles
+* Accounts for ~ 49% of the variation
+
+```{r}
+mod3b <- lm(average_price ~ is_organic + region + month,
+            data = avocado_train)
+
+autoplot(mod3b)
+```
+
+
+```{r}
+summary(mod3b)
+```
+
+
+```{r}
+anova(mod2b, mod3b)
+```
+
+Results:
+
+* RvF looks better, but higher errors for higher fitted values
+* Scale-Location errors become more spread out, slight cone shape
+* Normal Q-Q starting to lift off at both ends of the chart
+* Accounts for ~ 53% of the variation
+* Check that all results can be included using anova
+* **Choose this as the predictor**
+
+Plot the residuals
+
+```{r}
+avocado_resid <- avocado_train %>% 
+  add_residuals(mod3b) %>% 
+  select(-c(average_price, is_organic, region, month))
+
+avocado_resid %>% 
+  select(resid, everything()) %>% 
+  ggpairs()
+```
+
+Based on this, look at the following for the fourth predictor:
+
+* `prop_single_bags`
+* `year`
+* `ln_total_bags`
+
+
+```{r}
+mod4a <- lm(average_price ~ is_organic + region + month + prop_single_bags,
+            data = avocado_train)
+
+autoplot(mod4a)
+```
+
+
+```{r}
+summary(mod4a)
+```
+
+
+```{r}
+anova(mod3b, mod4a)
+```
+
+Results:
+
+* RvF looks better
+* Scale-Location still has a slight cone shape
+* Normal Q-Q lifts off more at the top
+* Accounts for ~ 55% of the variation
+* Check for significance using anova
+
+
+```{r}
+mod4b <- lm(average_price ~ is_organic + region + month + year,
+            data = avocado_train)
+
+autoplot(mod4b)
+```
+
+
+```{r}
+summary(mod4b)
+```
+
+
+```{r}
+anova(mod3b, mod4b)
+```
+
+Results:
+
+* RvF looks better
+* Scale-Location has more of a cpne shape than mod4a
+* Normal Q-Q lifts off more at the both ends
+* Accounts for ~ 56% of the variation
+* Check for significance using anova
+
+
+```{r}
+mod4c <- lm(average_price ~ is_organic + region + month + ln_total_bags,
+            data = avocado_train)
+
+autoplot(mod4c)
+```
+
+
+```{r}
+summary(mod4c)
+```
+
+
+```{r}
+anova(mod3b, mod4c)
+```
+
+
+Results:
+
+* RvF looks ok
+* Scale-Location has more of a cone shape than mod4a
+* Normal Q-Q lifts off more at the  end
+* Accounts for ~ 55% of the variation
+* Check for significance using anova
+* **Choose this model**
+
+
+Test the model
+
+```{r}
+predictions_test <- avocado_test %>% 
+  add_predictions(mod4c) %>% 
+  select(average_price, pred)
+
+predictions_test
+```
+
+```{r}
+predictions_test <- predictions_test %>% 
+  mutate(sq_err = (pred - average_price)^2)
+
+mse_test <- mean(predictions_test$sq_err)
+mse_test # normally this would be sqrt'd -> RMSE
+
+sqrt(mse_test)
+```
+
+
+```{r}
+predictions_train <- avocado_train %>% 
+  add_predictions(mod4c) %>% 
+  select(average_price, pred)
+
+predictions_train
+```
+
+
+```{r}
+predictions_train <- predictions_train %>% 
+  mutate(sq_err = (pred - average_price) ^ 2)
+
+mse_train <- mean(predictions_train$sq_err)
+mse_train
+
+sqrt(mse_train)
+```
+
+
+
+K-fold cross validation
+
+```{r}
+library(caret)
+```
+
+
+```{r}
+cv_10_fold <- trainControl(method = "cv",
+                           number = 10,
+                           savePredictions = TRUE)
+
+avo_model <- train(average_price ~ is_organic + region + month + year,
+                   data = avocado_train,
+                   trControl = cv_10_fold,
+                   method = "lm")
+```
+
+
+```{r}
+avo_model$pred
+```
+
+
+```{r}
+avo_model$resample
+```
+
+
+```{r}
+mean(avo_model$resample$RMSE)
+```
+
+
+```{r}
+mean(avo_model$resample$Rsquared)
+```
+

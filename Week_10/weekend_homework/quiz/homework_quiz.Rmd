@@ -1,0 +1,64 @@
+---
+title: "Homework Quiz"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    number_sections: true
+    df_print: paged
+    css: ../../../styles.css
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<br><br>
+
+1. I want to predict how well 6 year-olds are going to do in their final school exams. Using the following variables am I likely under-fitting, fitting well or over-fitting? Postcode, gender, reading level, score in maths test, date of birth, family income.
+
+Over-fitting as there are too many variables
+
+2. If I have two models, one with an AIC score of 34,902 and the other with an AIC score of 33,559 which model should I use?
+
+AIC: 33,559 - always choose the smaller AIC score
+
+
+3. I have two models, the first with: r-squared: 0.44, adjusted r-squared: 0.43. The second with: r-squared: 0.47, adjusted r-squared: 0.41. Which one should I use?
+
+The first - r-squared can be increased simply by adding more variables, regardless of their significance. The adjusted r-squared is a better measure of model performance
+
+
+4. I have a model with the following errors: RMSE error on test set: 10.3, RMSE error on training data: 10.4. Do you think this model is over-fitting?
+
+No, if the model was 'over-fitted' the training data would have a lower error rate, which is not the case here.
+
+
+5. How does k-fold validation work?
+
+* It is a way to test and train an entire data set
+* Split the data into 'k' sets
+* Use 1:k set as the 'test' data, the rest at the 'train' data
+* Perform 'k' iterations of test/train, changing the 'test' set each time
+* Look at the average errors/r-squared values for model performance
+
+
+6. What is a validation set? When do you need one?
+
+It is a final sub-set of data that can be used to predict model performance. It should only be used when the model has been completely configured
+
+
+7. Describe how backwards selection works.
+
+Backwards selection works by creating models which start with all available variables as predictors. Variables are then removed systematically, taking away the one which impacts model performance the least.
+
+
+8. Describe how best subset selection works.
+
+Tries to find the best performing model by using all possible combinations of predictors that are available
+
+
+
+
+
