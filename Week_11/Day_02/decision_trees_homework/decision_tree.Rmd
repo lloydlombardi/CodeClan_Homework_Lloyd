@@ -1,0 +1,259 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(rpart)
+library(rpart.plot)
+library(tidyverse)
+
+library(GGally)
+titanic_set <- read_csv('data/titanic_decision_tree_data.csv')
+
+shuffle_index <- sample(1:nrow(titanic_set))
+
+# shuffle the data so class order isn't in order - need this for training/testing split later on 
+titanic_set <- titanic_set[shuffle_index, ]
+```
+
+# Question 1
+
+```{r}
+titanic_clean <- titanic_set %>% 
+  filter(!is.na(survived)) %>% 
+  mutate(sex = as.factor(sex),
+         survived = as.factor(survived),
+         pclass = as.factor(pclass),
+         embarked = as.factor(embarked)) %>% 
+  mutate(age_status = as.factor(case_when(age <= 16 ~ "child",
+                                TRUE ~ "adult"))) %>% 
+  drop_na() %>% 
+  select(-c(...1, passenger_id, name, ticket, fare, cabin))
+```
+
+
+# Question 2
+
+```{r}
+titanic_clean %>% 
+  select(survived, everything()) %>% 
+  ggpairs()
+```
+
+
+```{r}
+titanic_clean %>% 
+  ggplot(aes(x = age,
+             y = survived)) +
+  geom_boxplot()
+```
+
+
+```{r}
+titanic_clean %>% 
+  group_by(survived, age_status) %>% 
+  summarise(count = n()) %>% 
+  ggplot(aes(x = survived,
+             y = count,
+             fill = age_status))+
+  geom_col(position = "dodge")
+```
+
+
+```{r}
+titanic_clean %>% 
+  group_by(survived, sex) %>% 
+  summarise(count = n()) %>% 
+  ggplot(aes(x = survived,
+             y = count,
+             fill = sex))+
+  geom_col(position = "dodge")
+```
+
+
+```{r}
+titanic_clean %>% 
+  group_by(survived, pclass) %>% 
+  summarise(count = n()) %>% 
+  ggplot(aes(x = survived,
+             y = count,
+             fill = pclass))+
+  geom_col(position = "dodge")
+```
+
+
+```{r}
+titanic_clean %>% 
+  group_by(survived, embarked) %>% 
+  summarise(count = n()) %>% 
+  ggplot(aes(x = survived,
+             y = count,
+             fill = embarked))+
+  geom_col(position = "dodge")
+```
+
+Summary:
+
+* There appears to be a difference in ages between those that survived vs those that did not
+* There is a large difference in age_status
+* The vast majority of those that did not survive were male, whilst the majority of those that survived were female
+* There is a large difference in pclass status - pclass 2 had the best relative survival rate
+* Passengers embarking at "C" had the best chance of survival compared to the total passengers from that port
+
+
+# Question 3
+```{r}
+n_data <- nrow(titanic_clean)
+
+test_index <- sample(1:n_data, size = n_data * 0.2)
+
+titanic_train <- slice(titanic_clean, -test_index)
+
+titanic_test <- slice(titanic_clean, test_index)
+```
+
+To create a test and train sample:
+
+* create a variable `n_data` which takes the number of rows in the entire dataset
+* create a random list of numbers using sample between 1 and the number of rows in the data set
+  + take 20% of these numbers which will be given to the testing data set
+* create a split of data where 80% of the rows are randomly assigned to the training data set
+* create a split of data where 80% of the rows are randomly assigned to the test data set
+
+Check the split is balanced
+```{r}
+library(janitor)
+
+titanic_test %>% 
+  tabyl(survived)
+
+titanic_train %>% 
+  tabyl(survived)
+```
+
+The split code had to be re-run a few times until an acceptable balance was struck
+
+
+# Question 4
+
+Build the model
+```{r}
+titanic_fit <- rpart(
+  formula = survived ~ .,
+  data = titanic_train,
+  method = "class"
+)
+```
+
+Visualise the model
+```{r}
+rpart.plot(titanic_fit,
+           yesno = 2,
+           fallen.leaves = TRUE,
+           faclen = 6,
+           digits = 4)
+
+rpart.plot(titanic_fit,
+           yesno = 2,
+           fallen.leaves = TRUE,
+           type = 4,
+           extra = 101,
+           digits = 4)
+```
+
+
+# Question 5
+
+* Of 147 people
+  + 100 survived
+  + 47 died
+  + accounts for 100% of the data
+* The data is then split between whether the passenger was female or male
+* For female:
+  + 69 survived 
+  + 5 died
+  + accounts for 50.43% of the data
+  + **Leaf stops here**
+* For male:
+  + 31 survived
+  + 42 died
+  + accounts for 49.66% of the data
+* The data is then split between the age of the passengers (53 or older, and below 53)
+* For male passengers aged 53 and older:
+  + 3 survived 
+  + 13 died
+  + accounts for 10.88% of the data
+  + **Leaf stops here**
+* For male passengers younger than 53:
+  + 28 survived
+  + 29 died
+  + accounts for 38.78% of the data
+* The data is then split between male passengers younger than 47.5 and 47.5 and older
+* For male passengers younger than 47.5:
+  + 21 survived
+  + 26 died
+  + accounts for 31.97% of the data
+* For male passengers 47.5 or older:
+  + 7 survived
+  + 3 died
+  + accounts for 6.8% of the data
+  + **Leaf stops here**
+* The data is then split between male passengers younger than 36.5 and 36.5 and older
+* For male passengers younger than 36.5:
+  + 18 survived
+  + 15 died
+  + accounts for 22.45% of the data
+* For male passengers 36.5 and older:
+  + 3 survived
+  + 11 died
+  + accounts for 9.52% of the data
+  + **Leaf stops here**
+* The data is then split between male passengers younger than 24.5 and 24.5 and older
+* * For male passengers younger than 24.5:
+  + 4 survived
+  + 6 died
+  + accounts for 6.8% of the data
+  + **Leaf stops here**
+* For male passengers 24.5 and older:
+  + 14 survived
+  + 9 died
+  + accounts for 15.65% of the data
+  + **Leaf stops here**
+  
+* females had a survival probability of 0.9324
+* males aged 53 and older had the lowest survival probability of 0.1875
+
+
+# Question 6
+
+Create predictions
+```{r}
+library(modelr)
+```
+
+
+```{r}
+titanic_test_pred <- titanic_test %>% 
+  add_predictions(titanic_fit, type = "class")
+
+titanic_test_pred
+```
+
+
+Check performance
+```{r}
+library(caret)
+```
+
+
+```{r}
+confusionMatrix(titanic_test_pred$pred,
+                titanic_test_pred$survived)
+```
+
+
+
+  
+
+
