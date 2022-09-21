@@ -221,6 +221,15 @@ ggplot(telco_visualise) +
 
 The customer is more likely to churn if they have a low tenure. As tenure increases, the rate of churn decreases
 
+```{r}
+odds_change <- function(b1, change){
+  exp(b1 * change)
+}
+
+odds_change(-0.039010, 1)
+```
+On average, a 1 unit increase of tenure changings the odds of churning by a factor of 0.9617411
+
 
 ```{r}
 telco_clean %>% 
@@ -243,6 +252,8 @@ ggplot(telco_visualise) +
               alpha = 0.5, height = 0.1, width = 0.1) +
   geom_line(data = log_predictions_charges, aes(x = total_charges, y = pred), col = "red")
 ```
+
+
 
 
 
