@@ -17,6 +17,7 @@ shuffle_index <- sample(1:nrow(titanic_set))
 titanic_set <- titanic_set[shuffle_index, ]
 ```
 
+
 # Question 1
 
 ```{r}
@@ -27,11 +28,14 @@ titanic_clean <- titanic_set %>%
          pclass = as.factor(pclass),
          embarked = as.factor(embarked)) %>% 
   mutate(age_status = as.factor(case_when(age <= 16 ~ "child",
-                                TRUE ~ "adult"))) %>% 
-  drop_na() %>% 
-  select(-c(...1, passenger_id, name, ticket, fare, cabin))
+                                TRUE ~ "adult"))) %>%
+  select(-c(...1, passenger_id, name, ticket, fare, cabin)) %>% 
+  drop_na()
 ```
+The cleaning steps above had to be changed in the following ways:
 
+* bring the `select` step above the `drop_na()` step
+* data set goes from 150 rows to 712 rows
 
 # Question 2
 
@@ -144,6 +148,8 @@ titanic_fit <- rpart(
   data = titanic_train,
   method = "class"
 )
+
+titanic_fit
 ```
 
 Visualise the model
@@ -165,6 +171,7 @@ rpart.plot(titanic_fit,
 
 # Question 5
 
+** RESULTS BEFORE CHANGING `drop_na() STEP **
 * Of 147 people
   + 100 survived
   + 47 died
@@ -224,6 +231,12 @@ rpart.plot(titanic_fit,
 * females had a survival probability of 0.9324
 * males aged 53 and older had the lowest survival probability of 0.1875
 
+** RESULTS AFTER CHANGING `drop_na()` in cleaning step **
+
+* The largest group in the data (43%) comprises adult, male, lower and middle class passengers with a probability of survival of 0.11
+* The next largest group (22%) comprises female middle and upper class passengers, with a probability of survival of 0.94
+and so on
+
 
 # Question 6
 
@@ -252,6 +265,8 @@ confusionMatrix(titanic_test_pred$pred,
                 titanic_test_pred$survived)
 ```
 
+
+** RESULTS BEFORE CHANGING `drop_na() STEP **
 The model has:
 
 * correctly predicted 9 deaths
@@ -262,6 +277,17 @@ The model has:
 * sensitivity (TPR) of 0.6923
 * specificity (FPR) of 0.6957
 
+
+** RESULTS AFTER CHANGING `drop_na() STEP **
+The model has:
+
+* correctly predicted 72 deaths
+* correctly predicted 41 survivals
+* incorrectly predicted 14 deaths
+* incorrectly predicted 15 survivals
+* accuracy rating of 0.6944
+* sensitivity (TPR) of 0.8372
+* specificity (FPR) of 0.7321
 
   
 
