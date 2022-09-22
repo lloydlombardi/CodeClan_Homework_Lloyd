@@ -252,6 +252,15 @@ confusionMatrix(titanic_test_pred$pred,
                 titanic_test_pred$survived)
 ```
 
+The model has:
+
+* correctly predicted 9 deaths
+* correctly predicted 16 survivals
+* incorrectly predicted 7 deaths
+* incorrectly predicted 4 survivals
+* accuracy rating of 0.6944
+* sensitivity (TPR) of 0.6923
+* specificity (FPR) of 0.6957
 
 
   
