@@ -1,0 +1,42 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+library(broom)
+library(factoextra)
+library(GGally)
+```
+
+
+```{r}
+mall <- read_csv("data/mall_customers.csv") %>% janitor::clean_names()
+```
+
+
+```{r}
+mall_target <- mall %>% 
+  select(annual_income_k, spending_score_1_100)
+```
+
+
+```{r}
+mall_target %>% 
+  ggplot(aes(x = annual_income_k,
+             y = spending_score_1_100))+
+  geom_point()
+```
+findings:
+
+* low annual income, low spending score group
+* low annual income, high spending score group
+* middle annual income, middle spending score group
+* high annual income, low spending score group
+* high annual income, high spending score group
+
+k-means clustering
+
+
+
