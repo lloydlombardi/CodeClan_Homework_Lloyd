@@ -45,7 +45,7 @@ juice <- juice %>%
 
 ```{r}
 juice <- juice %>% 
-  select(-c(price_diff, list_price_diff, store7, disc_ch, disc_mm)) # drop more columns due to aliases
+  select(-c(price_diff, list_price_diff, sale_price_mm, sale_price_ch)) # drop more columns due to aliases
 
 alias(purchase_mm ~ .,
       data = juice)
@@ -59,11 +59,11 @@ juice %>% skim()
 ## split data for ggpairs plot
 ```{r}
 split1 <- juice %>% 
-  select(price_ch:loyal_ch, purchase_mm) %>% 
+  select(price_ch:special_ch, purchase_mm) %>% 
   select(purchase_mm, everything())
 
 split2 <- juice %>% 
-  select(sale_price_mm:store, purchase_mm) %>% 
+  select(special_mm:store, purchase_mm) %>% 
   select(purchase_mm, everything())
 
 split3 <- juice %>% 
@@ -122,7 +122,7 @@ summary(glmulti_search_all_mains)
 
 
 ```{r}
-mod_glm <- glm(purchase_mm ~ loyal_ch + sale_price_mm + sale_price_ch,
+mod_glm <- glm(purchase_mm ~ store7 + price_mm + disc_mm + loyal_ch,
                data = juice_train,
                family = binomial(link = "logit"))
 
@@ -132,14 +132,14 @@ summary(mod_glm)
 
 ```{r}
 glmulti_search_previous_mains_one_pair <- glmulti(
-  purchase_mm ~ loyal_ch + sale_price_mm + sale_price_ch,
+  purchase_mm ~ store7 + price_mm + disc_mm + loyal_ch,
   data = juice_train,
   level = 2,
   method = "h",
   crit = "bic",
   confsetsize = 10,
   marginality = TRUE,
-  minsize = 6,
+  minsize = 5,
   maxsize = 6,
   plotty = FALSE,
   report = TRUE,
@@ -150,4 +150,15 @@ glmulti_search_previous_mains_one_pair <- glmulti(
 summary(glmulti_search_previous_mains_one_pair)
 ```
 
+
+
+```{r}
+top <- weightable(glmulti_search_previous_mains_one_pair)
+
+
+```
+
+
+
+AUC for test data
  
